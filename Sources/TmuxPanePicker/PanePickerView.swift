@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct PanePickerView: View {
-    @Environment(\.dismissWindow) private var dismissWindow
     @Bindable var viewModel: PanePickerViewModel
+    let onDismiss: () -> Void
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
@@ -19,7 +19,6 @@ struct PanePickerView: View {
         }
         .frame(minWidth: 760, idealWidth: 860, minHeight: 420, idealHeight: 520)
         .onAppear {
-            viewModel.prepareForPresentation()
             focusSearchField()
         }
         .onChange(of: viewModel.query) {
@@ -29,7 +28,7 @@ struct PanePickerView: View {
             focusSelectedPane()
         }
         .onExitCommand {
-            dismissWindow(id: "pane-picker")
+            onDismiss()
         }
         .onMoveCommand { direction in
             switch direction {
@@ -114,7 +113,7 @@ struct PanePickerView: View {
 
     private func focusSelectedPane() {
         if viewModel.focusSelectedPane() {
-            dismissWindow(id: "pane-picker")
+            onDismiss()
         }
     }
 }
