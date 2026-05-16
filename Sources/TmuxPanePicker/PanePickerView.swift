@@ -335,6 +335,15 @@ private struct PaneTile: View {
             RoundedRectangle(cornerRadius: 6)
                 .fill(tileBackground)
         }
+        .overlay(alignment: .leading) {
+            if let attentionColor {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(attentionColor)
+                    .frame(width: 4)
+                    .padding(.vertical, 6)
+                    .padding(.leading, 4)
+            }
+        }
         .overlay {
             RoundedRectangle(cornerRadius: 6)
                 .strokeBorder(tileBorder, lineWidth: pane.requiresUserAction ? 2 : 1)
@@ -380,8 +389,8 @@ private struct PaneTile: View {
     }
 
     private var tileBorder: Color {
-        if isSelected {
-            return Color.accentColor
+        if let attentionColor {
+            return attentionColor
         }
 
         switch pane.agentAttention {
@@ -391,6 +400,17 @@ private struct PaneTile: View {
             return .yellow.opacity(0.9)
         case nil:
             return Color(nsColor: .separatorColor).opacity(0.6)
+        }
+    }
+
+    private var attentionColor: Color? {
+        switch pane.agentAttention {
+        case .awaitingApproval:
+            return .red
+        case .waitingForUser:
+            return .yellow
+        case nil:
+            return nil
         }
     }
 
@@ -429,21 +449,17 @@ private struct AgentAttentionBadge: View {
     }
 
     private var foregroundStyle: Color {
-        if isSelected {
-            return .white
-        }
-
         switch attention {
         case .waitingForUser:
-            return .orange
+            return isSelected ? .yellow : .orange
         case .awaitingApproval:
-            return .red
+            return isSelected ? .red : .red
         }
     }
 
     private var backgroundStyle: Color {
         if isSelected {
-            return .white.opacity(0.18)
+            return .white
         }
 
         switch attention {
