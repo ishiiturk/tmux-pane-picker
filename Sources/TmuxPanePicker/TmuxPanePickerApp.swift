@@ -10,7 +10,7 @@ struct TmuxPanePickerApp: App {
             Button("Open Pane Picker") {
                 PanePickerWindowCoordinator.shared.show()
             }
-            .keyboardShortcut("p")
+            .keyboardShortcut("p", modifiers: [.control, .option])
 
             Button("Refresh Panes") {
                 PanePickerWindowCoordinator.shared.show()

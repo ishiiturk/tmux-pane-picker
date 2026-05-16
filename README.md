@@ -73,6 +73,12 @@ Run the local executable during development.
 swift run tmux-pane-picker
 ```
 
+Global hotkey:
+
+```text
+Control + Option + P
+```
+
 Build a local `.app` bundle.
 
 ```sh
