@@ -74,7 +74,7 @@ struct PanePickerView: View {
                                                     focus(pane)
                                                 })
                                                 .onTapGesture {
-                                                    viewModel.selectedPaneID = pane.id
+                                                    focusKeepingWindowOpen(pane)
                                                 }
                                             }
                                         }
@@ -182,6 +182,10 @@ struct PanePickerView: View {
         viewModel.focus(pane: pane) {
             onDismiss()
         }
+    }
+
+    private func focusKeepingWindowOpen(_ pane: TmuxPane) {
+        viewModel.focus(pane: pane) {}
     }
 }
 
