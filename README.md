@@ -39,12 +39,15 @@ tmux list-panes -a -F '#{session_name}\t#{window_index}\t#{window_name}\t#{pane_
 選択時は session/window を切り替えてから pane を選択する。
 
 ```sh
-tmux switch-client -t "$session_name:$window_index"
+tmux list-clients -F '#{client_name}\t#{client_session}\t#{client_activity}\t#{client_flags}\t#{client_tty}'
+tmux switch-client -c "$client_name" -t "$session_name:$window_index"
 tmux select-pane -t "$pane_id"
 osascript -e 'tell application "iTerm2" to activate'
 ```
 
 `pane_id` は `%12` のような tmux 内部 ID を使う。表示名や index は変わり得るため、実際の focus 切り替えでは `pane_id` を優先する。
+
+tmux client は `attached` な client の中から `focused` を優先し、該当がなければ `client_activity` が新しいものを使う。v1 では単一 tmux server 前提のため、複数 socket の探索はしない。
 
 ## Implementation Plan
 

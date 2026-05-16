@@ -61,10 +61,51 @@ struct TmuxService {
         return TmuxPaneParser.parseListPanesOutput(result.stdout)
     }
 
+    func listClients() throws -> [TmuxClient] {
+        let format = [
+            "#{client_name}",
+            "#{client_session}",
+            "#{client_activity}",
+            "#{client_flags}",
+            "#{client_tty}"
+        ].joined(separator: "\t")
+
+        let result = try commandRunner.run(
+            executable: tmuxPath,
+            arguments: ["list-clients", "-F", format]
+        )
+
+        guard result.status == 0 else {
+            throw TmuxServiceError.commandFailed(
+                command: "tmux list-clients",
+                status: result.status,
+                stderr: result.stderr
+            )
+        }
+
+        return TmuxClientParser.parseListClientsOutput(result.stdout)
+    }
+
     func focus(_ pane: TmuxPane) throws {
-        try runTmux(arguments: ["switch-client", "-t", pane.targetWindow], commandName: "tmux switch-client")
+        let client = try targetClient()
+        try runTmux(
+            arguments: ["switch-client", "-c", client.name, "-t", pane.targetWindow],
+            commandName: "tmux switch-client"
+        )
         try runTmux(arguments: ["select-pane", "-t", pane.paneID], commandName: "tmux select-pane")
         try activateITerm2()
+    }
+
+    private func targetClient() throws -> TmuxClient {
+        guard let client = TmuxClientSelector.targetClient(from: try listClients()) else {
+            throw TmuxServiceError.commandFailed(
+                command: "tmux list-clients",
+                status: 1,
+                stderr: "No attached tmux clients were found."
+            )
+        }
+
+        return client
     }
 
     private func runTmux(arguments: [String], commandName: String) throws {
