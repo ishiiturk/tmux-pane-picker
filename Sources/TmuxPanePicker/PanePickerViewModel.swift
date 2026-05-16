@@ -7,7 +7,6 @@ final class PanePickerViewModel {
     var panes: [TmuxPane] = []
     var selectedPaneID: TmuxPane.ID?
     var errorMessage: String?
-    var diagnosticsMessage: String?
     var isLoading = false
     var isFocusing = false
     private var refreshTask: Task<Void, Never>?
@@ -107,14 +106,13 @@ final class PanePickerViewModel {
             do {
                 let panes = try await Task.detached {
                     let service = try TmuxService()
-                    return try service.listPanesWithDiagnostics()
+                    return try service.listPanes()
                 }.value
 
                 let previousSelectedPaneID = self.selectedPaneID
-                self.panes = panes.panes
-                self.diagnosticsMessage = panes.diagnostics
+                self.panes = panes
                 if let previousSelectedPaneID,
-                   panes.panes.contains(where: { $0.id == previousSelectedPaneID }) {
+                   panes.contains(where: { $0.id == previousSelectedPaneID }) {
                     self.selectedPaneID = previousSelectedPaneID
                 } else {
                     self.selectedPaneID = filteredPanes.first?.id

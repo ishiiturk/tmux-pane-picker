@@ -141,22 +141,11 @@ struct PanePickerView: View {
     }
 
     private var emptyView: some View {
-        VStack(spacing: 10) {
-            ContentUnavailableView(
-                "No panes",
-                systemImage: "rectangle.split.3x1",
-                description: Text("tmux returned no parsed panes.")
-            )
-
-            if let diagnosticsMessage = viewModel.diagnosticsMessage {
-                Text(diagnosticsMessage)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.leading)
-                    .padding(10)
-                    .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
-            }
-        }
+        ContentUnavailableView(
+            "No panes",
+            systemImage: "rectangle.split.3x1",
+            description: Text("No tmux panes are available.")
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 

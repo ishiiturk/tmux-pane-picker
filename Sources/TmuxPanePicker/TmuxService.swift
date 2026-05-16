@@ -4,7 +4,7 @@ import Foundation
 enum TmuxServiceError: LocalizedError {
     case tmuxNotFound
     case commandFailed(command: String, status: Int32, stderr: String)
-    case invalidOutput(String)
+    case invalidOutput
 
     var errorDescription: String? {
         switch self {
@@ -16,15 +16,10 @@ enum TmuxServiceError: LocalizedError {
                 return "\(command) failed with status \(status)."
             }
             return "\(command) failed with status \(status): \(message)"
-        case let .invalidOutput(message):
-            return message
+        case .invalidOutput:
+            return "tmux returned output that could not be parsed."
         }
     }
-}
-
-struct TmuxPaneListResult: Sendable {
-    let panes: [TmuxPane]
-    let diagnostics: String
 }
 
 struct TmuxService {
@@ -43,10 +38,6 @@ struct TmuxService {
     }
 
     func listPanes() throws -> [TmuxPane] {
-        try listPanesWithDiagnostics().panes
-    }
-
-    func listPanesWithDiagnostics() throws -> TmuxPaneListResult {
         let format = [
             "#{session_name}",
             "#{window_index}",
@@ -62,7 +53,6 @@ struct TmuxService {
             executable: tmuxPath,
             arguments: tmuxArguments(["list-panes", "-a", "-F", format])
         )
-        let rawLineCount = result.stdout.split(whereSeparator: \.isNewline).count
 
         guard result.status == 0 else {
             throw TmuxServiceError.commandFailed(
@@ -75,19 +65,13 @@ struct TmuxService {
         let panes = TmuxPaneParser.parseListPanesOutput(result.stdout).map { pane in
             enrichAgentAttention(for: pane)
         }
-        let diagnostics = [
-            "tmux: \(tmuxPath)",
-            "socket: \(socketPath ?? "default")",
-            "raw lines: \(rawLineCount)",
-            "parsed panes: \(panes.count)"
-        ].joined(separator: "\n")
 
         if panes.isEmpty,
            !result.stdout.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            throw TmuxServiceError.invalidOutput("\(diagnostics)\n\nRaw tmux output could not be parsed.")
+            throw TmuxServiceError.invalidOutput
         }
 
-        return TmuxPaneListResult(panes: panes, diagnostics: diagnostics)
+        return panes
     }
 
     func listClients() throws -> [TmuxClient] {
