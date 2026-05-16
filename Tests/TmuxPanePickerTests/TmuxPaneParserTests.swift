@@ -35,6 +35,16 @@ struct TmuxPaneParserTests {
     }
 
     @Test
+    func keepsTabsInsidePaneTitle() {
+        let output = "dev\t1\teditor\t0\t%12\tnvim\t/Users/example/app\tcodex:\tneeds input"
+
+        let panes = TmuxPaneParser.parseListPanesOutput(output)
+
+        #expect(panes.count == 1)
+        #expect(panes[0].paneTitle == "codex:\tneeds input")
+    }
+
+    @Test
     func detectsCodexStatusFromPaneTitle() {
         let running = CodexStatus(title: "codex: updating UI")
         let done = CodexStatus(title: "done: fixed bug")

@@ -161,7 +161,9 @@ enum TmuxPaneParser {
     }
 
     private static func parseLine(_ line: String) -> TmuxPane? {
-        let columns = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+        let columns = line
+            .split(separator: "\t", maxSplits: 7, omittingEmptySubsequences: false)
+            .map(String.init)
         guard columns.count == 8 else {
             return nil
         }
