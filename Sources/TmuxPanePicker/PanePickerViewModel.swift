@@ -5,7 +5,6 @@ import Observation
 @Observable
 final class PanePickerViewModel {
     var panes: [TmuxPane] = []
-    var query = ""
     var selectedPaneID: TmuxPane.ID?
     var errorMessage: String?
     var isLoading = false
@@ -28,16 +27,10 @@ final class PanePickerViewModel {
     }
 
     var filteredPanes: [TmuxPane] {
-        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !normalizedQuery.isEmpty else {
-            return panes
-        }
-
-        return panes.filter { $0.searchableText.contains(normalizedQuery) }
+        panes
     }
 
     func prepareForPresentation() {
-        query = ""
         refresh()
     }
 

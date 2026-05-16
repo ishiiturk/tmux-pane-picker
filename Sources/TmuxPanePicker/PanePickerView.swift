@@ -3,12 +3,9 @@ import SwiftUI
 struct PanePickerView: View {
     @Bindable var viewModel: PanePickerViewModel
     let onDismiss: () -> Void
-    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            searchField
-
             ZStack {
                 if let errorMessage = viewModel.errorMessage {
                     errorView(errorMessage)
@@ -23,13 +20,7 @@ struct PanePickerView: View {
                 }
             }
         }
-        .frame(minWidth: 520, idealWidth: 640, minHeight: 360, idealHeight: 460)
-        .onAppear {
-            focusSearchField()
-        }
-        .onChange(of: viewModel.query) {
-            viewModel.selectFirstFilteredPaneIfNeeded()
-        }
+        .frame(minWidth: 420, idealWidth: 500, minHeight: 260, idealHeight: 320)
         .onSubmit {
             focusSelectedPane()
         }
@@ -56,16 +47,6 @@ struct PanePickerView: View {
         }
     }
 
-    private var searchField: some View {
-        TextField("Search panes", text: $viewModel.query)
-            .textFieldStyle(.plain)
-            .font(.system(size: 20, weight: .medium))
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
-            .background(Color(nsColor: .textBackgroundColor))
-            .focused($isSearchFocused)
-    }
-
     private var paneList: some View {
         VStack(spacing: 0) {
             header
@@ -77,19 +58,21 @@ struct PanePickerView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 SessionHeader(group: group)
 
-                                ForEach(group.panes) { pane in
-                                    PaneRow(
-                                        pane: pane,
-                                        isSelected: pane.id == viewModel.selectedPaneID
-                                    )
-                                    .id(pane.id)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        viewModel.selectedPaneID = pane.id
-                                    }
-                                    .onTapGesture(count: 2) {
-                                        viewModel.selectedPaneID = pane.id
-                                        focusSelectedPane()
+                                LazyVGrid(columns: tileColumns, alignment: .leading, spacing: 6) {
+                                    ForEach(group.panes) { pane in
+                                        PaneTile(
+                                            pane: pane,
+                                            isSelected: pane.id == viewModel.selectedPaneID
+                                        )
+                                        .id(pane.id)
+                                        .contentShape(Rectangle())
+                                        .simultaneousGesture(TapGesture(count: 1).onEnded {
+                                            viewModel.selectedPaneID = pane.id
+                                        })
+                                        .simultaneousGesture(TapGesture(count: 2).onEnded {
+                                            viewModel.selectedPaneID = pane.id
+                                            focusSelectedPane()
+                                        })
                                     }
                                 }
                             }
@@ -110,6 +93,12 @@ struct PanePickerView: View {
                 }
             }
         }
+    }
+
+    private var tileColumns: [GridItem] {
+        [
+            GridItem(.adaptive(minimum: 142, maximum: 210), spacing: 6, alignment: .topLeading)
+        ]
     }
 
     private var paneGroups: [PaneGroup] {
@@ -173,12 +162,6 @@ struct PanePickerView: View {
         .shadow(radius: 12, y: 6)
     }
 
-    private func focusSearchField() {
-        DispatchQueue.main.async {
-            isSearchFocused = true
-        }
-    }
-
     private func focusSelectedPane() {
         viewModel.focusSelectedPane {
             onDismiss()
@@ -217,48 +200,53 @@ private struct SessionHeader: View {
     }
 }
 
-private struct PaneRow: View {
+private struct PaneTile: View {
     let pane: TmuxPane
     let isSelected: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
                 Text(pane.displayWindow)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(primaryTextStyle)
-                    .frame(width: 104, alignment: .leading)
-                    .lineLimit(1)
-
-                Text(pane.currentCommand)
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(primaryTextStyle)
                     .lineLimit(1)
 
-                if let codexStatus = pane.codexStatus {
-                    CodexStatusBadge(status: codexStatus, isSelected: isSelected)
-                }
-
-                Spacer(minLength: 8)
+                Spacer(minLength: 4)
 
                 Text(pane.paneID)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundStyle(secondaryTextStyle)
                     .lineLimit(1)
             }
 
+            HStack(spacing: 6) {
+                Text(pane.currentCommand)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundStyle(primaryTextStyle)
+                    .lineLimit(1)
+
+                if let codexStatus = pane.codexStatus {
+                    CodexStatusIcon(status: codexStatus, isSelected: isSelected)
+                }
+            }
+
             Text(detailText)
-                .font(.system(size: 11, design: .monospaced))
+                .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(secondaryTextStyle)
-                .lineLimit(1)
+                .lineLimit(2)
                 .truncationMode(.middle)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 62, alignment: .topLeading)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 8)
         .background {
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.accentColor : Color.clear)
+                .fill(isSelected ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(isSelected ? Color.accentColor : Color(nsColor: .separatorColor).opacity(0.6))
         }
     }
 
@@ -270,10 +258,10 @@ private struct PaneRow: View {
         }
 
         if let title {
-            return "\(title) - \(pane.currentPath)"
+            return title
         }
 
-        return pane.currentPath
+        return URL(fileURLWithPath: pane.currentPath).lastPathComponent
     }
 
     private var primaryTextStyle: some ShapeStyle {
@@ -285,18 +273,26 @@ private struct PaneRow: View {
     }
 }
 
-private struct CodexStatusBadge: View {
+private struct CodexStatusIcon: View {
     let status: CodexStatus
     let isSelected: Bool
 
     var body: some View {
-        Text(status.label)
-            .font(.system(size: 11, weight: .semibold))
+        Image(systemName: symbolName)
+            .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(foregroundStyle)
-            .lineLimit(1)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(backgroundStyle, in: Capsule())
+            .frame(width: 20, height: 20)
+            .background(backgroundStyle, in: Circle())
+            .help(status.label)
+    }
+
+    private var symbolName: String {
+        switch status {
+        case .running:
+            return "sparkles"
+        case .done:
+            return "checkmark.seal.fill"
+        }
     }
 
     private var foregroundStyle: Color {
