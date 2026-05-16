@@ -328,13 +328,13 @@ private struct PaneTile: View {
             }
 
             Text(verbatim: detailText)
-                .font(.system(size: 11))
+                .font(.system(size: 12))
                 .foregroundStyle(secondaryTextStyle)
-                .lineLimit(1)
+                .lineLimit(2)
                 .truncationMode(.tail)
-                .frame(height: 14, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, minHeight: 68, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: 76, alignment: .topLeading)
         .padding(.horizontal, 9)
         .padding(.vertical, 8)
         .background {
