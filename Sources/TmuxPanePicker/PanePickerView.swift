@@ -70,13 +70,12 @@ struct PanePickerView: View {
                                                 )
                                                 .id(pane.id)
                                                 .contentShape(Rectangle())
-                                                .simultaneousGesture(TapGesture(count: 1).onEnded {
-                                                    viewModel.selectedPaneID = pane.id
+                                                .highPriorityGesture(TapGesture(count: 2).onEnded {
+                                                    focus(pane)
                                                 })
-                                                .simultaneousGesture(TapGesture(count: 2).onEnded {
+                                                .onTapGesture {
                                                     viewModel.selectedPaneID = pane.id
-                                                    focusSelectedPane()
-                                                })
+                                                }
                                             }
                                         }
                                     }
@@ -175,6 +174,12 @@ struct PanePickerView: View {
 
     private func focusSelectedPane() {
         viewModel.focusSelectedPane {
+            onDismiss()
+        }
+    }
+
+    private func focus(_ pane: TmuxPane) {
+        viewModel.focus(pane: pane) {
             onDismiss()
         }
     }
@@ -353,35 +358,7 @@ private struct PaneTile: View {
     }
 
     private var detailText: String {
-        let pathName = URL(fileURLWithPath: pane.currentPath).lastPathComponent
-
-        if let statusLabel {
-            return "\(statusLabel) · \(pathName)"
-        }
-
-        return pathName
-    }
-
-    private var statusLabel: String? {
-        if let agentAttention = pane.agentAttention {
-            switch agentAttention {
-            case .awaitingApproval:
-                return "Approval"
-            case .waitingForUser:
-                return "Waiting"
-            }
-        }
-
-        if let codexStatus = pane.codexStatus {
-            switch codexStatus {
-            case .running:
-                return "Running"
-            case .done:
-                return "Done"
-            }
-        }
-
-        return nil
+        pane.displayTitle
     }
 
     private var primaryTextStyle: some ShapeStyle {

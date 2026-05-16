@@ -38,8 +38,27 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
         CodexStatus(title: paneTitle)
     }
 
+    var displayTitle: String {
+        let title = paneTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayText = codexStatus?.message ?? title
+        let cleanedText = Self.cleanDisplayTitle(displayText)
+
+        if !cleanedText.isEmpty {
+            return cleanedText
+        }
+
+        return URL(fileURLWithPath: currentPath).lastPathComponent
+    }
+
     var requiresUserAction: Bool {
         agentAttention != nil
+    }
+
+    private static func cleanDisplayTitle(_ title: String) -> String {
+        let separators = CharacterSet.whitespacesAndNewlines
+            .union(CharacterSet(charactersIn: "-:|"))
+
+        return title.trimmingCharacters(in: separators)
     }
 }
 

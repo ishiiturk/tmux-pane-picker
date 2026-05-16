@@ -136,6 +136,11 @@ final class PanePickerViewModel {
             return
         }
 
+        focus(pane: selectedPane, onSuccess: onSuccess)
+    }
+
+    func focus(pane: TmuxPane, onSuccess: @escaping @MainActor () -> Void) {
+        selectedPaneID = pane.id
         isFocusing = true
         errorMessage = nil
 
@@ -143,7 +148,7 @@ final class PanePickerViewModel {
             do {
                 try await Task.detached {
                     let service = try TmuxService()
-                    try service.focus(selectedPane)
+                    try service.focus(pane)
                 }.value
 
                 self.errorMessage = nil

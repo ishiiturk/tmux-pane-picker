@@ -98,6 +98,20 @@ struct TmuxPaneParserTests {
     }
 
     @Test
+    func displayTitleRemovesCodexStatusPrefix() {
+        let pane = TmuxPane.makeFixture(paneTitle: "codex: PRにしてください")
+
+        #expect(pane.displayTitle == "PRにしてください")
+    }
+
+    @Test
+    func displayTitleTrimsTitleSeparators() {
+        let pane = TmuxPane.makeFixture(paneTitle: "---実装レビュー---")
+
+        #expect(pane.displayTitle == "実装レビュー")
+    }
+
+    @Test
     func detectsAgentWaitingForUser() {
         let screen = """
         • Edited 2 files
@@ -146,5 +160,21 @@ struct TmuxPaneParserTests {
         )
 
         #expect(attention == nil)
+    }
+}
+
+private extension TmuxPane {
+    static func makeFixture(paneTitle: String) -> TmuxPane {
+        TmuxPane(
+            sessionName: "dev",
+            windowIndex: "1",
+            windowName: "node",
+            paneIndex: "0",
+            paneID: "%12",
+            currentCommand: "node",
+            currentPath: "/Users/example/app",
+            paneTitle: paneTitle,
+            agentAttention: nil
+        )
     }
 }
