@@ -5,7 +5,7 @@ import SwiftUI
 final class PanePickerWindowCoordinator {
     static let shared = PanePickerWindowCoordinator()
 
-    private let viewModel = PanePickerViewModel()
+    let viewModel = PanePickerViewModel()
     private var window: NSWindow?
 
     private init() {}
@@ -22,7 +22,6 @@ final class PanePickerWindowCoordinator {
     }
 
     func hide() {
-        viewModel.stopAutoRefresh()
         window?.orderOut(nil)
     }
 

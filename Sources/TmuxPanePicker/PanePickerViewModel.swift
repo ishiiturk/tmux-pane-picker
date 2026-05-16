@@ -32,6 +32,38 @@ final class PanePickerViewModel {
         panes
     }
 
+    var waitingForUserCount: Int {
+        panes.filter { $0.agentAttention == .waitingForUser }.count
+    }
+
+    var awaitingApprovalCount: Int {
+        panes.filter { $0.agentAttention == .awaitingApproval }.count
+    }
+
+    var menuBarTitle: String {
+        if awaitingApprovalCount > 0 {
+            return "\(awaitingApprovalCount)"
+        }
+
+        if waitingForUserCount > 0 {
+            return "\(waitingForUserCount)"
+        }
+
+        return ""
+    }
+
+    var menuBarSystemImage: String {
+        if awaitingApprovalCount > 0 {
+            return "person.crop.circle.badge.exclamationmark"
+        }
+
+        if waitingForUserCount > 0 {
+            return "person.crop.circle.badge.questionmark"
+        }
+
+        return "rectangle.split.3x1"
+    }
+
     func prepareForPresentation() {
         refresh()
     }

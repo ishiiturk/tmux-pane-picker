@@ -9,6 +9,7 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
     let currentCommand: String
     let currentPath: String
     let paneTitle: String
+    let agentAttention: AgentAttention?
 
     var id: String { paneID }
 
@@ -35,6 +36,10 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
 
     var codexStatus: CodexStatus? {
         CodexStatus(title: paneTitle)
+    }
+
+    var requiresUserAction: Bool {
+        agentAttention != nil
     }
 }
 
@@ -76,6 +81,78 @@ enum CodexStatus: Equatable, Sendable {
     }
 }
 
+enum AgentAttention: Equatable, Sendable {
+    case waitingForUser
+    case awaitingApproval
+
+    init?(screenText: String, codexStatus: CodexStatus?) {
+        guard case .running = codexStatus else {
+            return nil
+        }
+
+        let lines = screenText
+            .split(whereSeparator: \.isNewline)
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        let tail = lines.suffix(16).joined(separator: "\n")
+        let lowercasedTail = tail.lowercased()
+
+        if Self.containsApprovalPrompt(lowercasedTail) {
+            self = .awaitingApproval
+            return
+        }
+
+        if tail.contains("• Working") {
+            return nil
+        }
+
+        if lines.suffix(8).contains(where: { $0.hasPrefix("›") }) {
+            self = .waitingForUser
+            return
+        }
+
+        return nil
+    }
+
+    var label: String {
+        switch self {
+        case .waitingForUser:
+            return "Waiting for user"
+        case .awaitingApproval:
+            return "Approval needed"
+        }
+    }
+
+    private static func containsApprovalPrompt(_ text: String) -> Bool {
+        let approvalWords = [
+            "approval",
+            "approve",
+            "allow",
+            "permission",
+            "do you want to",
+            "requires approval"
+        ]
+
+        return approvalWords.contains { text.contains($0) }
+    }
+}
+
+extension TmuxPane {
+    func withAgentAttention(_ agentAttention: AgentAttention?) -> TmuxPane {
+        TmuxPane(
+            sessionName: sessionName,
+            windowIndex: windowIndex,
+            windowName: windowName,
+            paneIndex: paneIndex,
+            paneID: paneID,
+            currentCommand: currentCommand,
+            currentPath: currentPath,
+            paneTitle: paneTitle,
+            agentAttention: agentAttention
+        )
+    }
+}
+
 enum TmuxPaneParser {
     static func parseListPanesOutput(_ output: String) -> [TmuxPane] {
         output
@@ -97,7 +174,8 @@ enum TmuxPaneParser {
             paneID: columns[4],
             currentCommand: columns[5],
             currentPath: columns[6],
-            paneTitle: columns[7]
+            paneTitle: columns[7],
+            agentAttention: nil
         )
     }
 }

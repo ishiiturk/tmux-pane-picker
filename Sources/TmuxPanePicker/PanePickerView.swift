@@ -313,6 +313,10 @@ private struct PaneTile: View {
                     .foregroundStyle(primaryTextStyle)
                     .lineLimit(1)
 
+                if let agentAttention = pane.agentAttention {
+                    AgentAttentionBadge(attention: agentAttention, isSelected: isSelected)
+                }
+
                 if let codexStatus = pane.codexStatus {
                     CodexStatusIcon(status: codexStatus, isSelected: isSelected)
                 }
@@ -329,12 +333,13 @@ private struct PaneTile: View {
         .padding(.vertical, 8)
         .background {
             RoundedRectangle(cornerRadius: 6)
-                .fill(isSelected ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                .fill(tileBackground)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(isSelected ? Color.accentColor : Color(nsColor: .separatorColor).opacity(0.6))
+                .strokeBorder(tileBorder, lineWidth: pane.requiresUserAction ? 2 : 1)
         }
+        .shadow(color: attentionShadow, radius: pane.requiresUserAction ? 7 : 0, y: 2)
     }
 
     private var detailText: String {
@@ -357,6 +362,96 @@ private struct PaneTile: View {
 
     private var secondaryTextStyle: some ShapeStyle {
         isSelected ? .white.opacity(0.82) : .secondary
+    }
+
+    private var tileBackground: Color {
+        if isSelected {
+            return Color.accentColor
+        }
+
+        switch pane.agentAttention {
+        case .awaitingApproval:
+            return .red.opacity(0.14)
+        case .waitingForUser:
+            return .yellow.opacity(0.18)
+        case nil:
+            return Color(nsColor: .controlBackgroundColor)
+        }
+    }
+
+    private var tileBorder: Color {
+        if isSelected {
+            return Color.accentColor
+        }
+
+        switch pane.agentAttention {
+        case .awaitingApproval:
+            return .red.opacity(0.82)
+        case .waitingForUser:
+            return .yellow.opacity(0.9)
+        case nil:
+            return Color(nsColor: .separatorColor).opacity(0.6)
+        }
+    }
+
+    private var attentionShadow: Color {
+        switch pane.agentAttention {
+        case .awaitingApproval:
+            return .red.opacity(0.25)
+        case .waitingForUser:
+            return .yellow.opacity(0.25)
+        case nil:
+            return .clear
+        }
+    }
+}
+
+private struct AgentAttentionBadge: View {
+    let attention: AgentAttention
+    let isSelected: Bool
+
+    var body: some View {
+        Image(systemName: symbolName)
+            .font(.system(size: 11, weight: .bold))
+            .foregroundStyle(foregroundStyle)
+            .frame(width: 18, height: 18)
+            .background(backgroundStyle, in: Circle())
+            .help(attention.label)
+    }
+
+    private var symbolName: String {
+        switch attention {
+        case .waitingForUser:
+            return "questionmark"
+        case .awaitingApproval:
+            return "exclamationmark"
+        }
+    }
+
+    private var foregroundStyle: Color {
+        if isSelected {
+            return .white
+        }
+
+        switch attention {
+        case .waitingForUser:
+            return .orange
+        case .awaitingApproval:
+            return .red
+        }
+    }
+
+    private var backgroundStyle: Color {
+        if isSelected {
+            return .white.opacity(0.18)
+        }
+
+        switch attention {
+        case .waitingForUser:
+            return .yellow.opacity(0.22)
+        case .awaitingApproval:
+            return .red.opacity(0.18)
+        }
     }
 }
 

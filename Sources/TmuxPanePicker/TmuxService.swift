@@ -59,7 +59,9 @@ struct TmuxService {
             )
         }
 
-        return TmuxPaneParser.parseListPanesOutput(result.stdout)
+        return TmuxPaneParser.parseListPanesOutput(result.stdout).map { pane in
+            enrichAgentAttention(for: pane)
+        }
     }
 
     func listClients() throws -> [TmuxClient] {
@@ -118,6 +120,24 @@ struct TmuxService {
                 stderr: result.stderr
             )
         }
+    }
+
+    private func enrichAgentAttention(for pane: TmuxPane) -> TmuxPane {
+        guard let codexStatus = pane.codexStatus else {
+            return pane
+        }
+
+        guard let result = try? commandRunner.run(
+            executable: tmuxPath,
+            arguments: ["capture-pane", "-p", "-t", pane.paneID, "-S", "-80"]
+        ), result.status == 0 else {
+            return pane
+        }
+
+        return pane.withAgentAttention(AgentAttention(
+            screenText: result.stdout,
+            codexStatus: codexStatus
+        ))
     }
 
     private func activateITerm2() throws {

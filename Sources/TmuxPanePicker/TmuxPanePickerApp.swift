@@ -3,9 +3,10 @@ import SwiftUI
 @main
 struct TmuxPanePickerApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @State private var viewModel = PanePickerWindowCoordinator.shared.viewModel
 
     var body: some Scene {
-        MenuBarExtra("tmux panes", systemImage: "rectangle.split.3x1") {
+        MenuBarExtra {
             Button("Open Pane Picker") {
                 PanePickerWindowCoordinator.shared.show()
             }
@@ -21,6 +22,9 @@ struct TmuxPanePickerApp: App {
                 NSApp.terminate(nil)
             }
             .keyboardShortcut("q")
+        } label: {
+            Label(viewModel.menuBarTitle, systemImage: viewModel.menuBarSystemImage)
+                .labelStyle(.titleAndIcon)
         }
     }
 }

@@ -45,4 +45,55 @@ struct TmuxPaneParserTests {
         #expect(done?.label == "Codex done")
         #expect(CodexStatus(title: "ishii-mac.local") == nil)
     }
+
+    @Test
+    func detectsAgentWaitingForUser() {
+        let screen = """
+        • Edited 2 files
+
+        › Run /review on my current changes
+
+          main · gpt-5.5 default
+        """
+
+        let attention = AgentAttention(
+            screenText: screen,
+            codexStatus: .running("review changes")
+        )
+
+        #expect(attention == .waitingForUser)
+        #expect(attention?.label == "Waiting for user")
+    }
+
+    @Test
+    func detectsAgentAwaitingApproval() {
+        let screen = """
+        Do you want to allow this command?
+        npm run build
+        """
+
+        let attention = AgentAttention(
+            screenText: screen,
+            codexStatus: .running("build")
+        )
+
+        #expect(attention == .awaitingApproval)
+        #expect(attention?.label == "Approval needed")
+    }
+
+    @Test
+    func doesNotFlagWorkingAgentAsWaiting() {
+        let screen = """
+        › Implement feature
+
+        • Working (21s • esc to interrupt)
+        """
+
+        let attention = AgentAttention(
+            screenText: screen,
+            codexStatus: .running("implement feature")
+        )
+
+        #expect(attention == nil)
+    }
 }
