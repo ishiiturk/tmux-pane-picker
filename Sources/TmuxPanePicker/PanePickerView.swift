@@ -325,7 +325,7 @@ private struct PaneTile: View {
             Text(detailText)
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(secondaryTextStyle)
-                .lineLimit(2)
+                .lineLimit(1)
                 .truncationMode(.middle)
         }
         .frame(maxWidth: .infinity, minHeight: 62, alignment: .topLeading)
@@ -349,20 +349,39 @@ private struct PaneTile: View {
                 .strokeBorder(tileBorder, lineWidth: pane.requiresUserAction ? 2 : 1)
         }
         .shadow(color: attentionShadow, radius: pane.requiresUserAction ? 7 : 0, y: 2)
+        .help(pane.paneTitle.isEmpty ? pane.currentPath : pane.paneTitle)
     }
 
     private var detailText: String {
-        let title: String? = if let codexStatus = pane.codexStatus {
-            codexStatus.message.isEmpty ? nil : codexStatus.message
-        } else {
-            pane.paneTitle.isEmpty ? nil : pane.paneTitle
+        let pathName = URL(fileURLWithPath: pane.currentPath).lastPathComponent
+
+        if let statusLabel {
+            return "\(statusLabel) · \(pathName)"
         }
 
-        if let title {
-            return title
+        return pathName
+    }
+
+    private var statusLabel: String? {
+        if let agentAttention = pane.agentAttention {
+            switch agentAttention {
+            case .awaitingApproval:
+                return "Approval"
+            case .waitingForUser:
+                return "Waiting"
+            }
         }
 
-        return URL(fileURLWithPath: pane.currentPath).lastPathComponent
+        if let codexStatus = pane.codexStatus {
+            switch codexStatus {
+            case .running:
+                return "Running"
+            case .done:
+                return "Done"
+            }
+        }
+
+        return nil
     }
 
     private var primaryTextStyle: some ShapeStyle {
