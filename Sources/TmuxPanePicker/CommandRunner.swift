@@ -18,6 +18,11 @@ struct ProcessCommandRunner: CommandRunning {
 
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
+        process.environment = ProcessInfo.processInfo.environment.merging([
+            "LANG": "ja_JP.UTF-8",
+            "LC_ALL": "ja_JP.UTF-8",
+            "LC_CTYPE": "UTF-8"
+        ]) { _, new in new }
         process.standardOutput = stdout
         process.standardError = stderr
 
