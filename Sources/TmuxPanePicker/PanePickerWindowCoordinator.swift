@@ -15,12 +15,14 @@ final class PanePickerWindowCoordinator {
         self.window = window
 
         viewModel.prepareForPresentation()
+        viewModel.startAutoRefresh()
         NSApp.activate(ignoringOtherApps: true)
         window.center()
         window.makeKeyAndOrderFront(nil)
     }
 
     func hide() {
+        viewModel.stopAutoRefresh()
         window?.orderOut(nil)
     }
 

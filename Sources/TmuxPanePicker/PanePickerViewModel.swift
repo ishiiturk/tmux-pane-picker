@@ -9,6 +9,8 @@ final class PanePickerViewModel {
     var errorMessage: String?
     var isLoading = false
     var isFocusing = false
+    private var refreshTask: Task<Void, Never>?
+    private var isRefreshInFlight = false
 
     var isBusy: Bool {
         isLoading || isFocusing
@@ -34,8 +36,38 @@ final class PanePickerViewModel {
         refresh()
     }
 
-    func refresh() {
-        isLoading = true
+    func startAutoRefresh() {
+        guard refreshTask == nil else {
+            return
+        }
+
+        refreshTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else {
+                    return
+                }
+
+                self?.refresh(showLoading: false)
+            }
+        }
+    }
+
+    func stopAutoRefresh() {
+        refreshTask?.cancel()
+        refreshTask = nil
+    }
+
+    func refresh(showLoading: Bool = true) {
+        if isRefreshInFlight {
+            return
+        }
+
+        isRefreshInFlight = true
+        if showLoading {
+            isLoading = true
+        }
+
         errorMessage = nil
 
         Task {
@@ -45,8 +77,14 @@ final class PanePickerViewModel {
                     return try service.listPanes()
                 }.value
 
+                let previousSelectedPaneID = self.selectedPaneID
                 self.panes = panes
-                self.selectedPaneID = filteredPanes.first?.id
+                if let previousSelectedPaneID,
+                   panes.contains(where: { $0.id == previousSelectedPaneID }) {
+                    self.selectedPaneID = previousSelectedPaneID
+                } else {
+                    self.selectedPaneID = filteredPanes.first?.id
+                }
                 self.errorMessage = nil
             } catch {
                 self.panes = []
@@ -54,7 +92,10 @@ final class PanePickerViewModel {
                 self.errorMessage = error.localizedDescription
             }
 
-            self.isLoading = false
+            if showLoading {
+                self.isLoading = false
+            }
+            self.isRefreshInFlight = false
         }
     }
 
