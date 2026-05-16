@@ -44,7 +44,7 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
         let cleanedText = Self.cleanDisplayTitle(displayText)
 
         if !cleanedText.isEmpty {
-            return cleanedText
+            return Self.shortDisplayTitle(cleanedText)
         }
 
         return URL(fileURLWithPath: currentPath).lastPathComponent
@@ -59,6 +59,15 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
             .union(CharacterSet(charactersIn: "-:|"))
 
         return title.trimmingCharacters(in: separators)
+    }
+
+    private static func shortDisplayTitle(_ title: String) -> String {
+        let maxLength = 16
+        guard title.count > maxLength else {
+            return title
+        }
+
+        return String(title.prefix(maxLength)) + "..."
     }
 }
 

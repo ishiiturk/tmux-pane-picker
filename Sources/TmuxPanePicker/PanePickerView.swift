@@ -328,10 +328,10 @@ private struct PaneTile: View {
             }
 
             Text(detailText)
-                .font(.system(size: 10, design: .monospaced))
+                .font(.system(size: 10))
                 .foregroundStyle(secondaryTextStyle)
                 .lineLimit(1)
-                .truncationMode(.middle)
+                .truncationMode(.tail)
         }
         .frame(maxWidth: .infinity, minHeight: 62, alignment: .topLeading)
         .padding(.horizontal, 9)

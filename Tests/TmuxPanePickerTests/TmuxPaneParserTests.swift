@@ -112,6 +112,13 @@ struct TmuxPaneParserTests {
     }
 
     @Test
+    func displayTitleShortensLongJapaneseTitles() {
+        let pane = TmuxPane.makeFixture(paneTitle: "done: グループ一覧画面でも回数表示と上限リセット状態を表示")
+
+        #expect(pane.displayTitle == "グループ一覧画面でも回数表示と上...")
+    }
+
+    @Test
     func detectsAgentWaitingForUser() {
         let screen = """
         • Edited 2 files
