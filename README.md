@@ -73,7 +73,12 @@ Run the local executable during development.
 swift run tmux-pane-picker
 ```
 
-The current implementation is a SwiftPM executable that opens a macOS menu bar app. Packaging it as a `.app` bundle is a later step.
+Build a local `.app` bundle.
+
+```sh
+scripts/build-app.sh
+open dist/TmuxPanePicker.app
+```
 
 ## Runtime Assumptions
 
