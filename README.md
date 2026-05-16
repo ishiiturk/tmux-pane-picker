@@ -86,6 +86,18 @@ scripts/build-app.sh
 open dist/TmuxPanePicker.app
 ```
 
+Install as a login item.
+
+```sh
+scripts/install-login-item.sh
+```
+
+Uninstall the login item.
+
+```sh
+scripts/uninstall-login-item.sh
+```
+
 ## Runtime Assumptions
 
 GUI アプリからは shell の PATH が引き継がれない場合があるため、`tmux` は以下の順で探す。
