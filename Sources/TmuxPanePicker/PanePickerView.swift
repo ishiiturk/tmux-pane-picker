@@ -58,22 +58,29 @@ struct PanePickerView: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 SessionHeader(group: group)
 
-                                LazyVGrid(columns: tileColumns, alignment: .leading, spacing: 6) {
-                                    ForEach(group.panes) { pane in
-                                        PaneTile(
-                                            pane: pane,
-                                            isSelected: pane.id == viewModel.selectedPaneID
-                                        )
-                                        .id(pane.id)
-                                        .contentShape(Rectangle())
-                                        .simultaneousGesture(TapGesture(count: 1).onEnded {
-                                            viewModel.selectedPaneID = pane.id
-                                        })
-                                        .simultaneousGesture(TapGesture(count: 2).onEnded {
-                                            viewModel.selectedPaneID = pane.id
-                                            focusSelectedPane()
-                                        })
+                                ForEach(group.windowGroups) { windowGroup in
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        WindowHeader(group: windowGroup)
+
+                                        LazyVGrid(columns: tileColumns, alignment: .leading, spacing: 6) {
+                                            ForEach(windowGroup.panes) { pane in
+                                                PaneTile(
+                                                    pane: pane,
+                                                    isSelected: pane.id == viewModel.selectedPaneID
+                                                )
+                                                .id(pane.id)
+                                                .contentShape(Rectangle())
+                                                .simultaneousGesture(TapGesture(count: 1).onEnded {
+                                                    viewModel.selectedPaneID = pane.id
+                                                })
+                                                .simultaneousGesture(TapGesture(count: 2).onEnded {
+                                                    viewModel.selectedPaneID = pane.id
+                                                    focusSelectedPane()
+                                                })
+                                            }
+                                        }
                                     }
+                                    .padding(.leading, 8)
                                 }
                             }
                         }
@@ -116,6 +123,10 @@ struct PanePickerView: View {
             Text("\(viewModel.filteredPanes.count) panes")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.secondary)
+
+            Text("\(paneGroups.count) sessions")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.tertiary)
 
             Spacer()
         }
@@ -176,27 +187,103 @@ private struct PaneGroup: Identifiable {
     var id: String { sessionName }
 }
 
+private struct WindowGroup: Identifiable {
+    let windowIndex: String
+    let windowName: String
+    var panes: [TmuxPane]
+
+    var id: String { "\(windowIndex):\(windowName)" }
+    var displayName: String { "\(windowIndex):\(windowName)" }
+}
+
 private struct SessionHeader: View {
     let group: PaneGroup
 
     var body: some View {
         HStack(spacing: 8) {
+            Text("SESSION")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.white.opacity(0.72))
+
             Text(group.sessionName)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .foregroundStyle(.white)
 
-            Text("\(group.panes.count)")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.tertiary)
+            Spacer(minLength: 8)
 
-            Rectangle()
-                .fill(Color(nsColor: .separatorColor))
-                .frame(height: 1)
+            Text("\(group.windowCount) windows")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.82))
+
+            Text("\(group.panes.count) panes")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.82))
         }
         .padding(.horizontal, 10)
-        .padding(.top, 6)
-        .padding(.bottom, 2)
+        .padding(.vertical, 6)
+        .background {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.accentColor.opacity(0.84))
+        }
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+}
+
+private extension PaneGroup {
+    var windowCount: Int {
+        Set(panes.map(\.windowIndex)).count
+    }
+
+    var windowGroups: [WindowGroup] {
+        panes.reduce(into: []) { groups, pane in
+            if let index = groups.firstIndex(where: { $0.windowIndex == pane.windowIndex }) {
+                groups[index].panes.append(pane)
+            } else {
+                groups.append(WindowGroup(
+                    windowIndex: pane.windowIndex,
+                    windowName: pane.windowName,
+                    panes: [pane]
+                ))
+            }
+        }
+    }
+}
+
+private struct WindowHeader: View {
+    let group: WindowGroup
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "rectangle.split.2x1")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+
+            Text("WINDOW")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(.tertiary)
+
+            Text(group.displayName)
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 6)
+
+            Text("\(group.panes.count) panes")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(Color(nsColor: .windowBackgroundColor))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 5)
+                .strokeBorder(Color(nsColor: .separatorColor).opacity(0.6))
+        }
+        .padding(.top, 4)
     }
 }
 
@@ -207,7 +294,7 @@ private struct PaneTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
-                Text(pane.displayWindow)
+                Text("pane \(pane.paneIndex)")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(primaryTextStyle)
                     .lineLimit(1)
@@ -276,6 +363,7 @@ private struct PaneTile: View {
 private struct CodexStatusIcon: View {
     let status: CodexStatus
     let isSelected: Bool
+    @State private var isAnimating = false
 
     var body: some View {
         Image(systemName: symbolName)
@@ -283,15 +371,24 @@ private struct CodexStatusIcon: View {
             .foregroundStyle(foregroundStyle)
             .frame(width: 20, height: 20)
             .background(backgroundStyle, in: Circle())
+            .offset(x: runningOffset)
+            .animation(runningAnimation, value: isAnimating)
+            .onAppear {
+                guard case .running = status else {
+                    return
+                }
+
+                isAnimating = true
+            }
             .help(status.label)
     }
 
     private var symbolName: String {
         switch status {
         case .running:
-            return "person.crop.circle.badge.clock"
+            return "figure.run"
         case .done:
-            return "person.crop.circle.badge.checkmark"
+            return "figure.stand"
         }
     }
 
@@ -319,5 +416,21 @@ private struct CodexStatusIcon: View {
         case .done:
             return .green.opacity(0.14)
         }
+    }
+
+    private var runningOffset: CGFloat {
+        guard case .running = status else {
+            return 0
+        }
+
+        return isAnimating ? 1.8 : -1.8
+    }
+
+    private var runningAnimation: Animation? {
+        guard case .running = status else {
+            return nil
+        }
+
+        return .easeInOut(duration: 0.42).repeatForever(autoreverses: true)
     }
 }
