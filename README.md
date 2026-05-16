@@ -55,6 +55,23 @@ osascript -e 'tell application "iTerm2" to activate'
 5. メニューバー常駐とフローティング window を実装する。
 6. グローバルショートカットを追加する。
 
+## Development
+
+Build and test with SwiftPM.
+
+```sh
+swift test
+swift build
+```
+
+Run the local executable during development.
+
+```sh
+swift run tmux-pane-picker
+```
+
+The current implementation is a SwiftPM executable that opens a macOS menu bar app. Packaging it as a `.app` bundle is a later step.
+
 ## Runtime Assumptions
 
 GUI アプリからは shell の PATH が引き継がれない場合があるため、`tmux` は以下の順で探す。
