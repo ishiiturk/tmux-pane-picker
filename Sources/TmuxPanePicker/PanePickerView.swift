@@ -185,7 +185,9 @@ struct PanePickerView: View {
     }
 
     private func focusKeepingWindowOpen(_ pane: TmuxPane) {
-        viewModel.focus(pane: pane) {}
+        viewModel.focus(pane: pane) {
+            PanePickerWindowCoordinator.shared.refocusWindowAfterITermActivation()
+        }
     }
 }
 

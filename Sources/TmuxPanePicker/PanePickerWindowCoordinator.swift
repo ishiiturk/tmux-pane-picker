@@ -21,8 +21,55 @@ final class PanePickerWindowCoordinator {
         window.makeKeyAndOrderFront(nil)
     }
 
+    func showAnchored(to statusButton: NSStatusBarButton) {
+        let window = window ?? makeWindow()
+        self.window = window
+
+        viewModel.prepareForPresentation()
+        viewModel.startAutoRefresh()
+        NSApp.activate(ignoringOtherApps: true)
+        window.setFrameOrigin(anchorOrigin(for: statusButton, window: window))
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func refocusWindow() {
+        guard let window else {
+            return
+        }
+
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func refocusWindowAfterITermActivation() {
+        Task { @MainActor in
+            refocusWindow()
+            try? await Task.sleep(for: .milliseconds(350))
+            refocusWindow()
+        }
+    }
+
     func hide() {
         window?.orderOut(nil)
+    }
+
+    private func anchorOrigin(for statusButton: NSStatusBarButton, window: NSWindow) -> NSPoint {
+        guard let buttonWindow = statusButton.window,
+              let screen = buttonWindow.screen ?? NSScreen.main else {
+            return NSPoint(x: 0, y: 0)
+        }
+
+        let buttonFrameInScreen = buttonWindow.convertToScreen(statusButton.convert(statusButton.bounds, to: nil))
+        let screenFrame = screen.visibleFrame
+        let windowFrame = window.frame
+        let x = min(
+            max(buttonFrameInScreen.midX - windowFrame.width / 2, screenFrame.minX + 8),
+            screenFrame.maxX - windowFrame.width - 8
+        )
+        let y = buttonFrameInScreen.minY - windowFrame.height - 6
+
+        return NSPoint(x: x, y: max(y, screenFrame.minY + 8))
     }
 
     private func makeWindow() -> NSWindow {
