@@ -66,6 +66,26 @@ struct TmuxPaneParserTests {
     }
 
     @Test
+    func parsesTmuxEscapedUnitSeparatedOutput() {
+        let output = [
+            "dev",
+            "1",
+            "editor",
+            "0",
+            "%12",
+            "nvim",
+            "/Users/example/app",
+            "codex: needs input"
+        ].joined(separator: "\\037")
+
+        let panes = TmuxPaneParser.parseListPanesOutput(output)
+
+        #expect(panes.count == 1)
+        #expect(panes[0].paneID == "%12")
+        #expect(panes[0].paneTitle == "codex: needs input")
+    }
+
+    @Test
     func detectsCodexStatusFromPaneTitle() {
         let running = CodexStatus(title: "codex: updating UI")
         let done = CodexStatus(title: "done: fixed bug")

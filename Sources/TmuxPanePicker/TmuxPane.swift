@@ -44,7 +44,7 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
 }
 
 enum TmuxPaneFormat {
-    static let delimiter: Character = "\u{1F}"
+    static let delimiter = "\u{1F}"
 }
 
 enum CodexStatus: Equatable, Sendable {
@@ -184,15 +184,31 @@ enum TmuxPaneParser {
     }
 
     private static func parseColumns(_ line: String) -> [String] {
-        for delimiter in [TmuxPaneFormat.delimiter, "\t", "|"] as [Character] {
-            let columns = line
-                .split(separator: delimiter, maxSplits: 7, omittingEmptySubsequences: false)
-                .map(String.init)
+        for delimiter in ["\\037", TmuxPaneFormat.delimiter, "\t", "|"] {
+            let columns = split(line, separator: delimiter, maxSplits: 7)
             if columns.count == 8 {
                 return columns
             }
         }
 
         return []
+    }
+
+    private static func split(_ line: String, separator: String, maxSplits: Int) -> [String] {
+        guard !separator.isEmpty else {
+            return [line]
+        }
+
+        var columns: [String] = []
+        var remainder = line[...]
+
+        while columns.count < maxSplits,
+              let range = remainder.range(of: separator) {
+            columns.append(String(remainder[..<range.lowerBound]))
+            remainder = remainder[range.upperBound...]
+        }
+
+        columns.append(String(remainder))
+        return columns
     }
 }
