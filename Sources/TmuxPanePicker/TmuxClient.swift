@@ -1,6 +1,6 @@
 import Foundation
 
-struct TmuxClient: Equatable {
+struct TmuxClient: Equatable, Sendable {
     let name: String
     let sessionName: String
     let activity: Int

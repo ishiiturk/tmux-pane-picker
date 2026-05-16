@@ -9,15 +9,21 @@ struct PanePickerView: View {
         VStack(spacing: 0) {
             searchField
 
-            if let errorMessage = viewModel.errorMessage {
-                errorView(errorMessage)
-            } else if viewModel.filteredPanes.isEmpty {
-                emptyView
-            } else {
-                paneList
+            ZStack {
+                if let errorMessage = viewModel.errorMessage {
+                    errorView(errorMessage)
+                } else if viewModel.filteredPanes.isEmpty {
+                    emptyView
+                } else {
+                    paneList
+                }
+
+                if let busyMessage = viewModel.busyMessage {
+                    busyOverlay(busyMessage)
+                }
             }
         }
-        .frame(minWidth: 760, idealWidth: 860, minHeight: 420, idealHeight: 520)
+        .frame(minWidth: 520, idealWidth: 640, minHeight: 360, idealHeight: 460)
         .onAppear {
             focusSearchField()
         }
@@ -64,18 +70,55 @@ struct PanePickerView: View {
         VStack(spacing: 0) {
             header
 
-            List(selection: $viewModel.selectedPaneID) {
-                ForEach(viewModel.filteredPanes) { pane in
-                    PaneRow(pane: pane)
-                        .tag(pane.id)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) {
-                            viewModel.selectedPaneID = pane.id
-                            focusSelectedPane()
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        ForEach(paneGroups) { group in
+                            VStack(alignment: .leading, spacing: 2) {
+                                SessionHeader(group: group)
+
+                                ForEach(group.panes) { pane in
+                                    PaneRow(
+                                        pane: pane,
+                                        isSelected: pane.id == viewModel.selectedPaneID
+                                    )
+                                    .id(pane.id)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        viewModel.selectedPaneID = pane.id
+                                    }
+                                    .onTapGesture(count: 2) {
+                                        viewModel.selectedPaneID = pane.id
+                                        focusSelectedPane()
+                                    }
+                                }
+                            }
                         }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                }
+                .background(Color(nsColor: .textBackgroundColor))
+                .onChange(of: viewModel.selectedPaneID) {
+                    guard let selectedPaneID = viewModel.selectedPaneID else {
+                        return
+                    }
+
+                    withAnimation(.snappy(duration: 0.12)) {
+                        proxy.scrollTo(selectedPaneID, anchor: .center)
+                    }
                 }
             }
-            .listStyle(.inset)
+        }
+    }
+
+    private var paneGroups: [PaneGroup] {
+        viewModel.filteredPanes.reduce(into: []) { groups, pane in
+            if let index = groups.firstIndex(where: { $0.sessionName == pane.sessionName }) {
+                groups[index].panes.append(pane)
+            } else {
+                groups.append(PaneGroup(sessionName: pane.sessionName, panes: [pane]))
+            }
         }
     }
 
@@ -115,6 +158,21 @@ struct PanePickerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    private func busyOverlay(_ message: String) -> some View {
+        VStack(spacing: 10) {
+            ProgressView()
+                .controlSize(.small)
+
+            Text(message)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .shadow(radius: 12, y: 6)
+    }
+
     private func focusSearchField() {
         DispatchQueue.main.async {
             isSearchFocused = true
@@ -122,52 +180,148 @@ struct PanePickerView: View {
     }
 
     private func focusSelectedPane() {
-        if viewModel.focusSelectedPane() {
+        viewModel.focusSelectedPane {
             onDismiss()
         }
     }
 }
 
-private struct PaneRow: View {
-    let pane: TmuxPane
+private struct PaneGroup: Identifiable {
+    let sessionName: String
+    var panes: [TmuxPane]
+
+    var id: String { sessionName }
+}
+
+private struct SessionHeader: View {
+    let group: PaneGroup
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 2) {
-            GridRow {
-                Text(pane.sessionName)
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 96, alignment: .leading)
-                    .lineLimit(1)
+        HStack(spacing: 8) {
+            Text(group.sessionName)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
 
+            Text("\(group.panes.count)")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.tertiary)
+
+            Rectangle()
+                .fill(Color(nsColor: .separatorColor))
+                .frame(height: 1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 6)
+        .padding(.bottom, 2)
+    }
+}
+
+private struct PaneRow: View {
+    let pane: TmuxPane
+    let isSelected: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 8) {
                 Text(pane.displayWindow)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 128, alignment: .leading)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(primaryTextStyle)
+                    .frame(width: 104, alignment: .leading)
                     .lineLimit(1)
 
                 Text(pane.currentCommand)
-                    .font(.system(.body, design: .monospaced))
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundStyle(primaryTextStyle)
                     .lineLimit(1)
+
+                if let codexStatus = pane.codexStatus {
+                    CodexStatusBadge(status: codexStatus, isSelected: isSelected)
+                }
+
+                Spacer(minLength: 8)
 
                 Text(pane.paneID)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.tertiary)
-                    .frame(width: 48, alignment: .trailing)
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(secondaryTextStyle)
+                    .lineLimit(1)
             }
 
-            GridRow {
-                Color.clear
-                    .frame(width: 96, height: 0)
-                Color.clear
-                    .frame(width: 128, height: 0)
-                Text(pane.currentPath)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Color.clear
-                    .frame(width: 48, height: 0)
-            }
+            Text(detailText)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(secondaryTextStyle)
+                .lineLimit(1)
+                .truncationMode(.middle)
         }
-        .padding(.vertical, 7)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isSelected ? Color.accentColor : Color.clear)
+        }
+    }
+
+    private var detailText: String {
+        let title: String? = if let codexStatus = pane.codexStatus {
+            codexStatus.message.isEmpty ? nil : codexStatus.message
+        } else {
+            pane.paneTitle.isEmpty ? nil : pane.paneTitle
+        }
+
+        if let title {
+            return "\(title) - \(pane.currentPath)"
+        }
+
+        return pane.currentPath
+    }
+
+    private var primaryTextStyle: some ShapeStyle {
+        isSelected ? .white : .primary
+    }
+
+    private var secondaryTextStyle: some ShapeStyle {
+        isSelected ? .white.opacity(0.82) : .secondary
+    }
+}
+
+private struct CodexStatusBadge: View {
+    let status: CodexStatus
+    let isSelected: Bool
+
+    var body: some View {
+        Text(status.label)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(foregroundStyle)
+            .lineLimit(1)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(backgroundStyle, in: Capsule())
+    }
+
+    private var foregroundStyle: Color {
+        if isSelected {
+            return .white
+        }
+
+        switch status {
+        case .running:
+            return .orange
+        case .done:
+            return .green
+        }
+    }
+
+    private var backgroundStyle: Color {
+        if isSelected {
+            return .white.opacity(0.18)
+        }
+
+        switch status {
+        case .running:
+            return .orange.opacity(0.14)
+        case .done:
+            return .green.opacity(0.14)
+        }
     }
 }

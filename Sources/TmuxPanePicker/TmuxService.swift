@@ -42,7 +42,8 @@ struct TmuxService {
             "#{pane_index}",
             "#{pane_id}",
             "#{pane_current_command}",
-            "#{pane_current_path}"
+            "#{pane_current_path}",
+            "#{pane_title}"
         ].joined(separator: "\t")
 
         let result = try commandRunner.run(

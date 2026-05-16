@@ -42,8 +42,8 @@ final class PanePickerWindowCoordinator {
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 860, height: 520))
-        window.minSize = NSSize(width: 760, height: 420)
+        window.setContentSize(NSSize(width: 640, height: 460))
+        window.minSize = NSSize(width: 520, height: 360)
 
         return window
     }

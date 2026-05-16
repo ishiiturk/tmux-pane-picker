@@ -33,7 +33,7 @@ macOS 上で常駐し、iTerm2 とは別のフローティング UI から tmux 
 pane 一覧は tmux の format を使って取得する。
 
 ```sh
-tmux list-panes -a -F '#{session_name}\t#{window_index}\t#{window_name}\t#{pane_index}\t#{pane_id}\t#{pane_current_command}\t#{pane_current_path}'
+tmux list-panes -a -F '#{session_name}\t#{window_index}\t#{window_name}\t#{pane_index}\t#{pane_id}\t#{pane_current_command}\t#{pane_current_path}\t#{pane_title}'
 ```
 
 選択時は session/window を切り替えてから pane を選択する。

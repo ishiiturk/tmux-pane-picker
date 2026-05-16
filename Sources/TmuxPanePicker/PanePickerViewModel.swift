@@ -8,8 +8,24 @@ final class PanePickerViewModel {
     var query = ""
     var selectedPaneID: TmuxPane.ID?
     var errorMessage: String?
+    var isLoading = false
+    var isFocusing = false
 
-    private var service: TmuxService?
+    var isBusy: Bool {
+        isLoading || isFocusing
+    }
+
+    var busyMessage: String? {
+        if isFocusing {
+            return "Focusing pane"
+        }
+
+        if isLoading {
+            return "Loading panes"
+        }
+
+        return nil
+    }
 
     var filteredPanes: [TmuxPane] {
         let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -26,34 +42,51 @@ final class PanePickerViewModel {
     }
 
     func refresh() {
-        do {
-            let service = try self.service ?? TmuxService()
-            self.service = service
-            panes = try service.listPanes()
-            selectedPaneID = filteredPanes.first?.id
-            errorMessage = nil
-        } catch {
-            panes = []
-            selectedPaneID = nil
-            errorMessage = error.localizedDescription
+        isLoading = true
+        errorMessage = nil
+
+        Task {
+            do {
+                let panes = try await Task.detached {
+                    let service = try TmuxService()
+                    return try service.listPanes()
+                }.value
+
+                self.panes = panes
+                self.selectedPaneID = filteredPanes.first?.id
+                self.errorMessage = nil
+            } catch {
+                self.panes = []
+                self.selectedPaneID = nil
+                self.errorMessage = error.localizedDescription
+            }
+
+            self.isLoading = false
         }
     }
 
-    @discardableResult
-    func focusSelectedPane() -> Bool {
+    func focusSelectedPane(onSuccess: @escaping @MainActor () -> Void) {
         guard let selectedPane = filteredPanes.first(where: { $0.id == selectedPaneID }) ?? filteredPanes.first else {
-            return false
+            return
         }
 
-        do {
-            let service = try self.service ?? TmuxService()
-            self.service = service
-            try service.focus(selectedPane)
-            errorMessage = nil
-            return true
-        } catch {
-            errorMessage = error.localizedDescription
-            return false
+        isFocusing = true
+        errorMessage = nil
+
+        Task {
+            do {
+                try await Task.detached {
+                    let service = try TmuxService()
+                    try service.focus(selectedPane)
+                }.value
+
+                self.errorMessage = nil
+                self.isFocusing = false
+                onSuccess()
+            } catch {
+                self.errorMessage = error.localizedDescription
+                self.isFocusing = false
+            }
         }
     }
 
