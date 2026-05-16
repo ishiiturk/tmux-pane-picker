@@ -289,9 +289,9 @@ private struct CodexStatusIcon: View {
     private var symbolName: String {
         switch status {
         case .running:
-            return "sparkles"
+            return "person.crop.circle.badge.clock"
         case .done:
-            return "checkmark.seal.fill"
+            return "person.crop.circle.badge.checkmark"
         }
     }
 
