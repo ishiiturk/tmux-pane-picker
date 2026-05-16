@@ -121,13 +121,13 @@ struct TmuxService {
 
     private func activateITerm2() throws {
         let result = try commandRunner.run(
-            executable: "/usr/bin/osascript",
-            arguments: ["-e", "tell application \"iTerm2\" to activate"]
+            executable: "/usr/bin/open",
+            arguments: ["-b", "com.googlecode.iterm2"]
         )
 
         guard result.status == 0 else {
             throw TmuxServiceError.commandFailed(
-                command: "osascript",
+                command: "open -b com.googlecode.iterm2",
                 status: result.status,
                 stderr: result.stderr
             )

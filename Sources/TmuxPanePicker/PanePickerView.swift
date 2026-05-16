@@ -27,6 +27,14 @@ struct PanePickerView: View {
         .onSubmit {
             focusSelectedPane()
         }
+        .onKeyPress(.return) {
+            focusSelectedPane()
+            return .handled
+        }
+        .onKeyPress(.escape) {
+            onDismiss()
+            return .handled
+        }
         .onExitCommand {
             onDismiss()
         }
@@ -60,6 +68,11 @@ struct PanePickerView: View {
                 ForEach(viewModel.filteredPanes) { pane in
                     PaneRow(pane: pane)
                         .tag(pane.id)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) {
+                            viewModel.selectedPaneID = pane.id
+                            focusSelectedPane()
+                        }
                 }
             }
             .listStyle(.inset)
@@ -73,9 +86,6 @@ struct PanePickerView: View {
                 .foregroundStyle(.secondary)
 
             Spacer()
-
-            Text("Enter to focus")
-            Text("Esc to close")
         }
         .font(.system(size: 12))
         .foregroundStyle(.tertiary)
