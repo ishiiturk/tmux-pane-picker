@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 
 enum TmuxServiceError: LocalizedError {
@@ -23,6 +24,7 @@ enum TmuxServiceError: LocalizedError {
 
 struct TmuxService {
     private let tmuxPath: String
+    private let socketPath: String?
     private let commandRunner: CommandRunning
 
     init(commandRunner: CommandRunning = ProcessCommandRunner()) throws {
@@ -31,6 +33,7 @@ struct TmuxService {
         }
 
         self.tmuxPath = tmuxPath
+        self.socketPath = Self.findTmuxSocketPath()
         self.commandRunner = commandRunner
     }
 
@@ -48,7 +51,7 @@ struct TmuxService {
 
         let result = try commandRunner.run(
             executable: tmuxPath,
-            arguments: ["list-panes", "-a", "-F", format]
+            arguments: tmuxArguments(["list-panes", "-a", "-F", format])
         )
 
         guard result.status == 0 else {
@@ -75,7 +78,7 @@ struct TmuxService {
 
         let result = try commandRunner.run(
             executable: tmuxPath,
-            arguments: ["list-clients", "-F", format]
+            arguments: tmuxArguments(["list-clients", "-F", format])
         )
 
         guard result.status == 0 else {
@@ -129,7 +132,7 @@ struct TmuxService {
 
         guard let result = try? commandRunner.run(
             executable: tmuxPath,
-            arguments: ["capture-pane", "-p", "-t", pane.paneID, "-S", "-80"]
+            arguments: tmuxArguments(["capture-pane", "-p", "-t", pane.paneID, "-S", "-80"])
         ), result.status == 0 else {
             return pane
         }
@@ -172,6 +175,30 @@ struct TmuxService {
             if !path.isEmpty {
                 return path
             }
+        }
+
+        return nil
+    }
+
+    private func tmuxArguments(_ arguments: [String]) -> [String] {
+        guard let socketPath else {
+            return arguments
+        }
+
+        return ["-S", socketPath] + arguments
+    }
+
+    private static func findTmuxSocketPath() -> String? {
+        if let tmux = ProcessInfo.processInfo.environment["TMUX"]?.split(separator: ",").first {
+            let socketPath = String(tmux)
+            if FileManager.default.fileExists(atPath: socketPath) {
+                return socketPath
+            }
+        }
+
+        let defaultSocketPath = "/private/tmp/tmux-\(getuid())/default"
+        if FileManager.default.fileExists(atPath: defaultSocketPath) {
+            return defaultSocketPath
         }
 
         return nil
