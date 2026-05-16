@@ -43,6 +43,10 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
     }
 }
 
+enum TmuxPaneFormat {
+    static let delimiter: Character = "\u{1F}"
+}
+
 enum CodexStatus: Equatable, Sendable {
     case running(String)
     case done(String)
@@ -161,9 +165,7 @@ enum TmuxPaneParser {
     }
 
     private static func parseLine(_ line: String) -> TmuxPane? {
-        let columns = line
-            .split(separator: "\t", maxSplits: 7, omittingEmptySubsequences: false)
-            .map(String.init)
+        let columns = parseColumns(line)
         guard columns.count == 8 else {
             return nil
         }
@@ -179,5 +181,18 @@ enum TmuxPaneParser {
             paneTitle: columns[7],
             agentAttention: nil
         )
+    }
+
+    private static func parseColumns(_ line: String) -> [String] {
+        for delimiter in [TmuxPaneFormat.delimiter, "\t", "|"] as [Character] {
+            let columns = line
+                .split(separator: delimiter, maxSplits: 7, omittingEmptySubsequences: false)
+                .map(String.init)
+            if columns.count == 8 {
+                return columns
+            }
+        }
+
+        return []
     }
 }

@@ -56,7 +56,7 @@ struct TmuxService {
             "#{pane_current_command}",
             "#{pane_current_path}",
             "#{pane_title}"
-        ].joined(separator: "\t")
+        ].joined(separator: String(TmuxPaneFormat.delimiter))
 
         let result = try commandRunner.run(
             executable: tmuxPath,
