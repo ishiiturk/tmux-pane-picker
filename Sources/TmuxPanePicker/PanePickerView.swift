@@ -363,24 +363,18 @@ private struct PaneTile: View {
 private struct CodexStatusIcon: View {
     let status: CodexStatus
     let isSelected: Bool
-    @State private var isAnimating = false
 
     var body: some View {
-        Image(systemName: symbolName)
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(foregroundStyle)
-            .frame(width: 20, height: 20)
-            .background(backgroundStyle, in: Circle())
-            .offset(x: runningOffset)
-            .animation(runningAnimation, value: isAnimating)
-            .onAppear {
-                guard case .running = status else {
-                    return
-                }
-
-                isAnimating = true
-            }
-            .help(status.label)
+        TimelineView(.animation) { timeline in
+            Image(systemName: symbolName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(foregroundStyle)
+                .frame(width: 20, height: 20)
+                .background(backgroundStyle, in: Circle())
+                .offset(x: runningOffset(at: timeline.date))
+                .help(status.label)
+        }
+        .frame(width: 24, height: 20)
     }
 
     private var symbolName: String {
@@ -418,19 +412,12 @@ private struct CodexStatusIcon: View {
         }
     }
 
-    private var runningOffset: CGFloat {
+    private func runningOffset(at date: Date) -> CGFloat {
         guard case .running = status else {
             return 0
         }
 
-        return isAnimating ? 1.8 : -1.8
-    }
-
-    private var runningAnimation: Animation? {
-        guard case .running = status else {
-            return nil
-        }
-
-        return .easeInOut(duration: 0.42).repeatForever(autoreverses: true)
+        let phase = date.timeIntervalSinceReferenceDate.remainder(dividingBy: 0.84) / 0.84
+        return CGFloat(sin(phase * .pi * 2)) * 1.8
     }
 }
