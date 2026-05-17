@@ -20,7 +20,7 @@ struct PanePickerView: View {
                 }
             }
         }
-        .frame(minWidth: 420, idealWidth: 500, minHeight: 260, idealHeight: 320)
+        .frame(minWidth: 420, idealWidth: 500, minHeight: 360, idealHeight: 560)
         .onSubmit {
             focusSelectedPane()
         }

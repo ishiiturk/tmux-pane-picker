@@ -32,6 +32,17 @@ final class PanePickerWindowCoordinator {
         window.makeKeyAndOrderFront(nil)
     }
 
+    func showNearMenuBarFallback() {
+        let window = window ?? makeWindow()
+        self.window = window
+
+        viewModel.prepareForPresentation()
+        viewModel.startAutoRefresh()
+        NSApp.activate(ignoringOtherApps: true)
+        window.setFrameOrigin(menuBarFallbackOrigin(for: window))
+        window.makeKeyAndOrderFront(nil)
+    }
+
     func refocusWindow() {
         guard let window else {
             return
@@ -72,6 +83,19 @@ final class PanePickerWindowCoordinator {
         return NSPoint(x: x, y: max(y, screenFrame.minY + 8))
     }
 
+    private func menuBarFallbackOrigin(for window: NSWindow) -> NSPoint {
+        guard let screen = NSScreen.main else {
+            return NSPoint(x: 0, y: 0)
+        }
+
+        let screenFrame = screen.visibleFrame
+        let windowFrame = window.frame
+        return NSPoint(
+            x: screenFrame.maxX - windowFrame.width - 12,
+            y: screenFrame.maxY - windowFrame.height - 8
+        )
+    }
+
     private func makeWindow() -> NSWindow {
         let contentView = PanePickerView(
             viewModel: viewModel,
@@ -90,8 +114,8 @@ final class PanePickerWindowCoordinator {
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.isReleasedWhenClosed = false
-        window.setContentSize(NSSize(width: 500, height: 320))
-        window.minSize = NSSize(width: 420, height: 260)
+        window.setContentSize(NSSize(width: 500, height: 560))
+        window.minSize = NSSize(width: 420, height: 360)
 
         return window
     }
