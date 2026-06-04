@@ -133,7 +133,7 @@ struct TmuxService {
     }
 
     private func enrichAgentAttention(for pane: TmuxPane) -> TmuxPane {
-        guard let codexStatus = pane.codexStatus else {
+        guard let agentStatus = pane.agentStatus else {
             return pane
         }
 
@@ -146,7 +146,7 @@ struct TmuxService {
 
         return pane.withAgentAttention(AgentAttention(
             screenText: result.stdout,
-            codexStatus: codexStatus
+            agentStatus: agentStatus
         ))
     }
 

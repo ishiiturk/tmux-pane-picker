@@ -34,13 +34,13 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
         ].joined(separator: " ").lowercased()
     }
 
-    var codexStatus: CodexStatus? {
-        CodexStatus(title: paneTitle)
+    var agentStatus: AgentStatus? {
+        AgentStatus(title: paneTitle, currentCommand: currentCommand)
     }
 
     var displayTitle: String {
         let title = paneTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayText = codexStatus?.message ?? title
+        let displayText = agentStatus?.message ?? title
         let cleanedText = Self.cleanDisplayTitle(displayText)
 
         if !cleanedText.isEmpty {
@@ -75,18 +75,37 @@ enum TmuxPaneFormat {
     static let delimiter = "\u{1F}"
 }
 
-enum CodexStatus: Equatable, Sendable {
-    case running(String)
+enum CodingAgent: Equatable, Sendable {
+    case codex
+    case claudeCode
+
+    var displayName: String {
+        switch self {
+        case .codex:
+            return "Codex"
+        case .claudeCode:
+            return "Claude Code"
+        }
+    }
+}
+
+enum AgentStatus: Equatable, Sendable {
+    case running(CodingAgent, String)
     case done(String)
 
-    init?(title: String) {
+    init?(title: String, currentCommand: String = "") {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let lowercasedTitle = trimmedTitle.lowercased()
 
-        if lowercasedTitle.hasPrefix("codex:") {
-            self = .running(Self.message(from: trimmedTitle, prefixLength: 6))
+        if let agentPrefix = Self.runningAgentPrefix(in: lowercasedTitle) {
+            self = .running(
+                agentPrefix.agent,
+                Self.message(from: trimmedTitle, prefixLength: agentPrefix.prefix.count)
+            )
         } else if lowercasedTitle.hasPrefix("done:") {
             self = .done(Self.message(from: trimmedTitle, prefixLength: 5))
+        } else if let agent = Self.runningAgent(command: currentCommand) {
+            self = .running(agent, trimmedTitle)
         } else {
             return nil
         }
@@ -94,17 +113,40 @@ enum CodexStatus: Equatable, Sendable {
 
     var label: String {
         switch self {
-        case .running:
-            return "Codex running"
+        case let .running(agent, _):
+            return "\(agent.displayName) running"
         case .done:
-            return "Codex done"
+            return "Agent done"
         }
     }
 
     var message: String {
         switch self {
-        case let .running(message), let .done(message):
+        case let .running(_, message), let .done(message):
             return message
+        }
+    }
+
+    private static func runningAgentPrefix(in lowercasedTitle: String) -> (agent: CodingAgent, prefix: String)? {
+        let prefixes: [(CodingAgent, String)] = [
+            (.claudeCode, "claude code:"),
+            (.claudeCode, "claude:"),
+            (.codex, "codex:")
+        ]
+
+        return prefixes.first { lowercasedTitle.hasPrefix($0.1) }
+    }
+
+    private static func runningAgent(command: String) -> CodingAgent? {
+        let executable = URL(fileURLWithPath: command).lastPathComponent.lowercased()
+
+        switch executable {
+        case "codex":
+            return .codex
+        case "claude":
+            return .claudeCode
+        default:
+            return nil
         }
     }
 
@@ -117,8 +159,8 @@ enum AgentAttention: Equatable, Sendable {
     case waitingForUser
     case awaitingApproval
 
-    init?(screenText: String, codexStatus: CodexStatus?) {
-        guard case .running = codexStatus else {
+    init?(screenText: String, agentStatus: AgentStatus?) {
+        guard case .running = agentStatus else {
             return nil
         }
 
@@ -138,7 +180,7 @@ enum AgentAttention: Equatable, Sendable {
             return nil
         }
 
-        if lines.suffix(8).contains(where: { $0.hasPrefix("›") }) {
+        if lines.suffix(8).contains(where: Self.isInputPrompt) {
             self = .waitingForUser
             return
         }
@@ -166,6 +208,13 @@ enum AgentAttention: Equatable, Sendable {
         ]
 
         return approvalWords.contains { text.contains($0) }
+    }
+
+    private static func isInputPrompt(_ line: String) -> Bool {
+        line.hasPrefix("›")
+            || line.hasPrefix(">")
+            || line.hasPrefix("❯")
+            || line.contains("│ >")
     }
 }
 
