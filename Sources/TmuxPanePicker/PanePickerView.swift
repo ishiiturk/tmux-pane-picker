@@ -495,12 +495,7 @@ private struct AgentStatusIcon: View {
     }
 
     private var symbolName: String {
-        switch status {
-        case .running:
-            return "figure.run"
-        case .done:
-            return "figure.stand"
-        }
+        status.iconSystemName
     }
 
     private var foregroundStyle: Color {

@@ -127,6 +127,15 @@ enum AgentStatus: Equatable, Sendable {
         }
     }
 
+    var iconSystemName: String {
+        switch self {
+        case let .running(agent, _):
+            return agent.runningIconSystemName
+        case .done:
+            return "figure.stand"
+        }
+    }
+
     private static func runningAgentPrefix(in lowercasedTitle: String) -> (agent: CodingAgent, prefix: String)? {
         let prefixes: [(CodingAgent, String)] = [
             (.claudeCode, "claudecode:"),
@@ -153,6 +162,17 @@ enum AgentStatus: Equatable, Sendable {
 
     private static func message(from title: String, prefixLength: Int) -> String {
         String(title.dropFirst(prefixLength)).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+private extension CodingAgent {
+    var runningIconSystemName: String {
+        switch self {
+        case .codex:
+            return "figure.run"
+        case .claudeCode:
+            return "sparkles"
+        }
     }
 }
 

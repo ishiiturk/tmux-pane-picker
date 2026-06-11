@@ -110,6 +110,17 @@ struct TmuxPaneParserTests {
     }
 
     @Test
+    func usesAgentSpecificRunningStatusIcons() {
+        let claude = AgentStatus(title: "feature work", currentCommand: "claude")
+        let codex = AgentStatus(title: "feature work", currentCommand: "codex")
+        let done = AgentStatus(title: "done: fixed bug")
+
+        #expect(claude?.iconSystemName == "sparkles")
+        #expect(codex?.iconSystemName == "figure.run")
+        #expect(done?.iconSystemName == "figure.stand")
+    }
+
+    @Test
     func detectsClaudeCodeStatusFromPaneTitle() {
         let compact = AgentStatus(title: "claudecode: editing files")
         let spaced = AgentStatus(title: "claude code: reviewing diff")
