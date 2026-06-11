@@ -110,7 +110,19 @@ struct TmuxPaneParserTests {
     }
 
     @Test
-    func displayTitleRemovesCodexStatusPrefix() {
+    func detectsClaudeCodeStatusFromPaneTitle() {
+        let compact = AgentStatus(title: "claudecode: editing files")
+        let spaced = AgentStatus(title: "claude code: reviewing diff")
+        let short = AgentStatus(title: "claude: fixing test")
+
+        #expect(compact == .running(.claudeCode, "editing files"))
+        #expect(spaced == .running(.claudeCode, "reviewing diff"))
+        #expect(short == .running(.claudeCode, "fixing test"))
+        #expect(short?.label == "Claude Code running")
+    }
+
+    @Test
+    func displayTitleRemovesAgentStatusPrefix() {
         let pane = TmuxPane.makeFixture(paneTitle: "codex: PRにしてください")
 
         #expect(pane.displayTitle == "PRにしてください")
@@ -165,11 +177,26 @@ struct TmuxPaneParserTests {
 
         let attention = AgentAttention(
             screenText: screen,
-            agentStatus: .running(.claudeCode, "build")
+            agentStatus: .running(.codex, "build")
         )
 
         #expect(attention == .awaitingApproval)
         #expect(attention?.label == "Approval needed")
+    }
+
+    @Test
+    func detectsClaudeCodeAwaitingApproval() {
+        let screen = """
+        Claude Code requests permission to run this command.
+        Do you want to proceed?
+        """
+
+        let attention = AgentAttention(
+            screenText: screen,
+            agentStatus: .running(.claudeCode, "run command")
+        )
+
+        #expect(attention == .awaitingApproval)
     }
 
     @Test
@@ -202,6 +229,44 @@ struct TmuxPaneParserTests {
         )
 
         #expect(attention == .waitingForUser)
+    }
+
+    @MainActor
+    @Test
+    func announcesNewApprovalOnlyOnceWhilePaneKeepsWaiting() {
+        let speaker = AgentApprovalSpeakerSpy()
+        var announcer = AgentApprovalAnnouncer()
+        let pane = TmuxPane.makeFixture(paneTitle: "codex: build")
+            .withAgentAttention(.awaitingApproval)
+
+        announcer.update(panes: [pane], speaker: speaker)
+        announcer.update(panes: [pane], speaker: speaker)
+
+        #expect(speaker.spokenCounts == [1])
+    }
+
+    @MainActor
+    @Test
+    func announcesApprovalAgainAfterItClearsAndReturns() {
+        let speaker = AgentApprovalSpeakerSpy()
+        var announcer = AgentApprovalAnnouncer()
+        let pane = TmuxPane.makeFixture(paneTitle: "codex: build")
+            .withAgentAttention(.awaitingApproval)
+
+        announcer.update(panes: [pane], speaker: speaker)
+        announcer.update(panes: [], speaker: speaker)
+        announcer.update(panes: [pane], speaker: speaker)
+
+        #expect(speaker.spokenCounts == [1, 1])
+    }
+}
+
+@MainActor
+private final class AgentApprovalSpeakerSpy: AgentApprovalSpeaking {
+    private(set) var spokenCounts: [Int] = []
+
+    func speakApprovalNeeded(count: Int) {
+        spokenCounts.append(count)
     }
 }
 

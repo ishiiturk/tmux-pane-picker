@@ -129,6 +129,7 @@ enum AgentStatus: Equatable, Sendable {
 
     private static func runningAgentPrefix(in lowercasedTitle: String) -> (agent: CodingAgent, prefix: String)? {
         let prefixes: [(CodingAgent, String)] = [
+            (.claudeCode, "claudecode:"),
             (.claudeCode, "claude code:"),
             (.claudeCode, "claude:"),
             (.codex, "codex:")

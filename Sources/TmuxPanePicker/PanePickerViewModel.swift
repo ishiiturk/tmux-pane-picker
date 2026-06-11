@@ -9,8 +9,14 @@ final class PanePickerViewModel {
     var errorMessage: String?
     var isLoading = false
     var isFocusing = false
+    @ObservationIgnored private let approvalSpeaker: any AgentApprovalSpeaking
+    @ObservationIgnored private var approvalAnnouncer = AgentApprovalAnnouncer()
     private var refreshTask: Task<Void, Never>?
     private var isRefreshInFlight = false
+
+    init(approvalSpeaker: any AgentApprovalSpeaking = MacOSAgentApprovalSpeaker()) {
+        self.approvalSpeaker = approvalSpeaker
+    }
 
     var isBusy: Bool {
         isLoading || isFocusing
@@ -111,6 +117,7 @@ final class PanePickerViewModel {
 
                 let previousSelectedPaneID = self.selectedPaneID
                 self.panes = panes
+                self.approvalAnnouncer.update(panes: panes, speaker: self.approvalSpeaker)
                 if let previousSelectedPaneID,
                    panes.contains(where: { $0.id == previousSelectedPaneID }) {
                     self.selectedPaneID = previousSelectedPaneID
