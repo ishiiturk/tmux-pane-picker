@@ -7,6 +7,7 @@ final class PanePickerWindowCoordinator {
 
     let viewModel = PanePickerViewModel()
     private var window: NSWindow?
+    private let windowDelegate = PanePickerWindowDelegate()
 
     private init() {}
 
@@ -30,6 +31,14 @@ final class PanePickerWindowCoordinator {
         NSApp.activate(ignoringOtherApps: true)
         window.setFrameOrigin(anchorOrigin(for: statusButton, window: window))
         window.makeKeyAndOrderFront(nil)
+    }
+
+    func toggleAnchored(to statusButton: NSStatusBarButton) {
+        if window?.isVisible == true {
+            hide()
+        } else {
+            showAnchored(to: statusButton)
+        }
     }
 
     func showNearMenuBarFallback() {
@@ -114,9 +123,17 @@ final class PanePickerWindowCoordinator {
         window.level = .floating
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.isReleasedWhenClosed = false
+        window.delegate = windowDelegate
         window.setContentSize(NSSize(width: 500, height: 560))
         window.minSize = NSSize(width: 420, height: 360)
 
         return window
+    }
+}
+
+private final class PanePickerWindowDelegate: NSObject, NSWindowDelegate {
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        sender.orderOut(nil)
+        return false
     }
 }

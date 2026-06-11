@@ -20,6 +20,7 @@ struct PanePickerView: View {
                 }
             }
         }
+        .background(PickerPalette.canvas)
         .frame(minWidth: 420, idealWidth: 500, minHeight: 360, idealHeight: 560)
         .onSubmit {
             focusSelectedPane()
@@ -84,10 +85,10 @@ struct PanePickerView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
                 }
-                .background(Color(nsColor: .textBackgroundColor))
+                .background(PickerPalette.canvas)
                 .onChange(of: viewModel.selectedPaneID) {
                     guard let selectedPaneID = viewModel.selectedPaneID else {
                         return
@@ -133,9 +134,10 @@ struct PanePickerView: View {
         .foregroundStyle(.tertiary)
         .padding(.horizontal, 18)
         .padding(.vertical, 8)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(.thinMaterial)
         .overlay(alignment: .bottom) {
             Divider()
+                .overlay(PickerPalette.divider)
         }
     }
 
@@ -169,7 +171,7 @@ struct PanePickerView: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-        .shadow(radius: 12, y: 6)
+        .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
     }
 
     private func focusSelectedPane() {
@@ -234,8 +236,9 @@ private struct SessionHeader: View {
         .padding(.vertical, 6)
         .background {
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color.accentColor.opacity(0.84))
+                .fill(PickerPalette.sessionHeader)
         }
+        .shadow(color: PickerPalette.sessionHeader.opacity(0.18), radius: 8, y: 3)
         .padding(.top, 8)
         .padding(.bottom, 4)
     }
@@ -288,11 +291,11 @@ private struct WindowHeader: View {
         .padding(.vertical, 4)
         .background {
             RoundedRectangle(cornerRadius: 5)
-                .fill(Color(nsColor: .windowBackgroundColor))
+                .fill(PickerPalette.windowHeader)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 5)
-                .strokeBorder(Color(nsColor: .separatorColor).opacity(0.6))
+                .strokeBorder(PickerPalette.divider)
         }
         .padding(.top, 4)
     }
@@ -378,16 +381,16 @@ private struct PaneTile: View {
 
     private var tileBackground: Color {
         if isSelected {
-            return Color.accentColor
+            return PickerPalette.selected
         }
 
         switch pane.agentAttention {
         case .awaitingApproval:
-            return .red.opacity(0.14)
+            return PickerPalette.approvalBackground
         case .waitingForUser:
-            return .yellow.opacity(0.18)
+            return PickerPalette.waitingBackground
         case nil:
-            return Color(nsColor: .controlBackgroundColor)
+            return PickerPalette.tile
         }
     }
 
@@ -398,20 +401,20 @@ private struct PaneTile: View {
 
         switch pane.agentAttention {
         case .awaitingApproval:
-            return .red.opacity(0.82)
+            return PickerPalette.approval
         case .waitingForUser:
-            return .yellow.opacity(0.9)
+            return PickerPalette.waiting
         case nil:
-            return Color(nsColor: .separatorColor).opacity(0.6)
+            return PickerPalette.divider
         }
     }
 
     private var attentionColor: Color? {
         switch pane.agentAttention {
         case .awaitingApproval:
-            return .red
+            return PickerPalette.approval
         case .waitingForUser:
-            return .yellow
+            return PickerPalette.waiting
         case nil:
             return nil
         }
@@ -420,9 +423,9 @@ private struct PaneTile: View {
     private var attentionShadow: Color {
         switch pane.agentAttention {
         case .awaitingApproval:
-            return .red.opacity(0.25)
+            return PickerPalette.approval.opacity(0.24)
         case .waitingForUser:
-            return .yellow.opacity(0.25)
+            return PickerPalette.waiting.opacity(0.24)
         case nil:
             return .clear
         }
@@ -454,9 +457,9 @@ private struct AgentAttentionBadge: View {
     private var foregroundStyle: Color {
         switch attention {
         case .waitingForUser:
-            return isSelected ? .yellow : .orange
+            return isSelected ? PickerPalette.waiting : .orange
         case .awaitingApproval:
-            return isSelected ? .red : .red
+            return PickerPalette.approval
         }
     }
 
@@ -467,9 +470,9 @@ private struct AgentAttentionBadge: View {
 
         switch attention {
         case .waitingForUser:
-            return .yellow.opacity(0.22)
+            return PickerPalette.waiting.opacity(0.22)
         case .awaitingApproval:
-            return .red.opacity(0.18)
+            return PickerPalette.approval.opacity(0.18)
         }
     }
 }
@@ -507,9 +510,9 @@ private struct AgentStatusIcon: View {
 
         switch status {
         case .running:
-            return .orange
+            return PickerPalette.running
         case .done:
-            return .green
+            return PickerPalette.done
         }
     }
 
@@ -520,9 +523,9 @@ private struct AgentStatusIcon: View {
 
         switch status {
         case .running:
-            return .orange.opacity(0.14)
+            return PickerPalette.running.opacity(0.14)
         case .done:
-            return .green.opacity(0.14)
+            return PickerPalette.done.opacity(0.14)
         }
     }
 
@@ -534,4 +537,19 @@ private struct AgentStatusIcon: View {
         let phase = date.timeIntervalSinceReferenceDate.remainder(dividingBy: 0.84) / 0.84
         return CGFloat(sin(phase * .pi * 2)) * 1.8
     }
+}
+
+private enum PickerPalette {
+    static let canvas = Color(red: 0.96, green: 0.97, blue: 1.00)
+    static let tile = Color.white.opacity(0.92)
+    static let windowHeader = Color(red: 0.91, green: 0.95, blue: 1.00)
+    static let divider = Color(red: 0.70, green: 0.75, blue: 0.86).opacity(0.62)
+    static let selected = Color(red: 0.16, green: 0.49, blue: 0.98)
+    static let sessionHeader = Color(red: 1.00, green: 0.39, blue: 0.43)
+    static let waiting = Color(red: 1.00, green: 0.72, blue: 0.18)
+    static let waitingBackground = Color(red: 1.00, green: 0.82, blue: 0.28).opacity(0.22)
+    static let approval = Color(red: 0.96, green: 0.22, blue: 0.50)
+    static let approvalBackground = Color(red: 0.96, green: 0.22, blue: 0.50).opacity(0.16)
+    static let running = Color(red: 0.63, green: 0.34, blue: 1.00)
+    static let done = Color(red: 0.00, green: 0.70, blue: 0.55)
 }

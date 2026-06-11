@@ -35,7 +35,7 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
     }
 
     var agentStatus: AgentStatus? {
-        AgentStatus(title: paneTitle)
+        AgentStatus(title: paneTitle, currentCommand: currentCommand)
     }
 
     var displayTitle: String {
@@ -75,7 +75,7 @@ enum TmuxPaneFormat {
     static let delimiter = "\u{1F}"
 }
 
-enum AgentKind: Equatable, Sendable {
+enum CodingAgent: Equatable, Sendable {
     case codex
     case claudeCode
 
@@ -84,26 +84,28 @@ enum AgentKind: Equatable, Sendable {
         case .codex:
             return "Codex"
         case .claudeCode:
-            return "ClaudeCode"
+            return "Claude Code"
         }
     }
 }
 
 enum AgentStatus: Equatable, Sendable {
-    case running(kind: AgentKind, message: String)
+    case running(CodingAgent, String)
     case done(String)
 
-    init?(title: String) {
+    init?(title: String, currentCommand: String = "") {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let lowercasedTitle = trimmedTitle.lowercased()
 
-        if let runningPrefix = Self.runningPrefix(for: lowercasedTitle) {
+        if let agentPrefix = Self.runningAgentPrefix(in: lowercasedTitle) {
             self = .running(
-                kind: runningPrefix.kind,
-                message: Self.message(from: trimmedTitle, prefixLength: runningPrefix.prefix.count)
+                agentPrefix.agent,
+                Self.message(from: trimmedTitle, prefixLength: agentPrefix.prefix.count)
             )
         } else if lowercasedTitle.hasPrefix("done:") {
             self = .done(Self.message(from: trimmedTitle, prefixLength: 5))
+        } else if let agent = Self.runningAgent(command: currentCommand) {
+            self = .running(agent, trimmedTitle)
         } else {
             return nil
         }
@@ -111,8 +113,8 @@ enum AgentStatus: Equatable, Sendable {
 
     var label: String {
         switch self {
-        case let .running(kind, _):
-            return "\(kind.displayName) running"
+        case let .running(agent, _):
+            return "\(agent.displayName) running"
         case .done:
             return "Agent done"
         }
@@ -125,15 +127,28 @@ enum AgentStatus: Equatable, Sendable {
         }
     }
 
-    private static func runningPrefix(for lowercasedTitle: String) -> (kind: AgentKind, prefix: String)? {
-        let prefixes: [(AgentKind, String)] = [
-            (.codex, "codex:"),
+    private static func runningAgentPrefix(in lowercasedTitle: String) -> (agent: CodingAgent, prefix: String)? {
+        let prefixes: [(CodingAgent, String)] = [
             (.claudeCode, "claudecode:"),
             (.claudeCode, "claude code:"),
-            (.claudeCode, "claude:")
+            (.claudeCode, "claude:"),
+            (.codex, "codex:")
         ]
 
         return prefixes.first { lowercasedTitle.hasPrefix($0.1) }
+    }
+
+    private static func runningAgent(command: String) -> CodingAgent? {
+        let executable = URL(fileURLWithPath: command).lastPathComponent.lowercased()
+
+        switch executable {
+        case "codex":
+            return .codex
+        case "claude":
+            return .claudeCode
+        default:
+            return nil
+        }
     }
 
     private static func message(from title: String, prefixLength: Int) -> String {
@@ -166,7 +181,7 @@ enum AgentAttention: Equatable, Sendable {
             return nil
         }
 
-        if lines.suffix(8).contains(where: { $0.hasPrefix("›") }) {
+        if lines.suffix(8).contains(where: Self.isInputPrompt) {
             self = .waitingForUser
             return
         }
@@ -194,6 +209,13 @@ enum AgentAttention: Equatable, Sendable {
         ]
 
         return approvalWords.contains { text.contains($0) }
+    }
+
+    private static func isInputPrompt(_ line: String) -> Bool {
+        line.hasPrefix("›")
+            || line.hasPrefix(">")
+            || line.hasPrefix("❯")
+            || line.contains("│ >")
     }
 }
 

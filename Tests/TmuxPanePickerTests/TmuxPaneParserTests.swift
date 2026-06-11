@@ -88,13 +88,25 @@ struct TmuxPaneParserTests {
     @Test
     func detectsAgentStatusFromPaneTitle() {
         let running = AgentStatus(title: "codex: updating UI")
+        let claudeRunning = AgentStatus(title: "claude code: updating UI")
         let done = AgentStatus(title: "done: fixed bug")
 
-        #expect(running == .running(kind: .codex, message: "updating UI"))
+        #expect(running == .running(.codex, "updating UI"))
         #expect(running?.label == "Codex running")
+        #expect(claudeRunning == .running(.claudeCode, "updating UI"))
+        #expect(claudeRunning?.label == "Claude Code running")
         #expect(done == .done("fixed bug"))
         #expect(done?.label == "Agent done")
         #expect(AgentStatus(title: "ishii-mac.local") == nil)
+    }
+
+    @Test
+    func detectsAgentStatusFromCurrentCommand() {
+        let claude = AgentStatus(title: "feature work", currentCommand: "claude")
+        let codex = AgentStatus(title: "feature work", currentCommand: "/opt/homebrew/bin/codex")
+
+        #expect(claude == .running(.claudeCode, "feature work"))
+        #expect(codex == .running(.codex, "feature work"))
     }
 
     @Test
@@ -103,15 +115,22 @@ struct TmuxPaneParserTests {
         let spaced = AgentStatus(title: "claude code: reviewing diff")
         let short = AgentStatus(title: "claude: fixing test")
 
-        #expect(compact == .running(kind: .claudeCode, message: "editing files"))
-        #expect(spaced == .running(kind: .claudeCode, message: "reviewing diff"))
-        #expect(short == .running(kind: .claudeCode, message: "fixing test"))
-        #expect(short?.label == "ClaudeCode running")
+        #expect(compact == .running(.claudeCode, "editing files"))
+        #expect(spaced == .running(.claudeCode, "reviewing diff"))
+        #expect(short == .running(.claudeCode, "fixing test"))
+        #expect(short?.label == "Claude Code running")
     }
 
     @Test
     func displayTitleRemovesAgentStatusPrefix() {
         let pane = TmuxPane.makeFixture(paneTitle: "codex: PRにしてください")
+
+        #expect(pane.displayTitle == "PRにしてください")
+    }
+
+    @Test
+    func displayTitleRemovesClaudeStatusPrefix() {
+        let pane = TmuxPane.makeFixture(paneTitle: "claude: PRにしてください")
 
         #expect(pane.displayTitle == "PRにしてください")
     }
@@ -142,7 +161,7 @@ struct TmuxPaneParserTests {
 
         let attention = AgentAttention(
             screenText: screen,
-            agentStatus: .running(kind: .codex, message: "review changes")
+            agentStatus: .running(.codex, "review changes")
         )
 
         #expect(attention == .waitingForUser)
@@ -158,7 +177,7 @@ struct TmuxPaneParserTests {
 
         let attention = AgentAttention(
             screenText: screen,
-            agentStatus: .running(kind: .codex, message: "build")
+            agentStatus: .running(.codex, "build")
         )
 
         #expect(attention == .awaitingApproval)
@@ -174,7 +193,7 @@ struct TmuxPaneParserTests {
 
         let attention = AgentAttention(
             screenText: screen,
-            agentStatus: .running(kind: .claudeCode, message: "run command")
+            agentStatus: .running(.claudeCode, "run command")
         )
 
         #expect(attention == .awaitingApproval)
@@ -190,10 +209,26 @@ struct TmuxPaneParserTests {
 
         let attention = AgentAttention(
             screenText: screen,
-            agentStatus: .running(kind: .codex, message: "implement feature")
+            agentStatus: .running(.codex, "implement feature")
         )
 
         #expect(attention == nil)
+    }
+
+    @Test
+    func detectsClaudeInputPrompt() {
+        let screen = """
+        Ready for your next prompt.
+
+        │ >
+        """
+
+        let attention = AgentAttention(
+            screenText: screen,
+            agentStatus: .running(.claudeCode, "feature work")
+        )
+
+        #expect(attention == .waitingForUser)
     }
 
     @MainActor
