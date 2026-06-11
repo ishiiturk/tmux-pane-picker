@@ -148,7 +148,10 @@ enum AgentStatus: Equatable, Sendable {
     }
 
     private static func runningAgent(command: String) -> CodingAgent? {
-        let executable = URL(fileURLWithPath: command).lastPathComponent.lowercased()
+        var executable = URL(fileURLWithPath: command).lastPathComponent.lowercased()
+        if executable.hasSuffix(".exe") {
+            executable.removeLast(4)
+        }
 
         switch executable {
         case "codex":

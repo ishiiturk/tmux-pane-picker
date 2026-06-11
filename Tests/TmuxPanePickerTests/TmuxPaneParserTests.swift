@@ -110,6 +110,15 @@ struct TmuxPaneParserTests {
     }
 
     @Test
+    func detectsAgentFromExecutableWithExeSuffix() {
+        let claude = AgentStatus(title: "feature work", currentCommand: "claude.exe")
+        let codex = AgentStatus(title: "feature work", currentCommand: "/opt/homebrew/bin/codex.exe")
+
+        #expect(claude == .running(.claudeCode, "feature work"))
+        #expect(codex == .running(.codex, "feature work"))
+    }
+
+    @Test
     func usesAgentSpecificRunningStatusIcons() {
         let claude = AgentStatus(title: "feature work", currentCommand: "claude")
         let codex = AgentStatus(title: "feature work", currentCommand: "codex")
