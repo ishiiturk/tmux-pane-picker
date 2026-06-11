@@ -328,8 +328,8 @@ private struct PaneTile: View {
                     AgentAttentionBadge(attention: agentAttention, isSelected: isSelected)
                 }
 
-                if let codexStatus = pane.codexStatus {
-                    CodexStatusIcon(status: codexStatus, isSelected: isSelected)
+                if let agentStatus = pane.agentStatus {
+                    AgentStatusIcon(status: agentStatus, isSelected: isSelected)
                 }
             }
 
@@ -474,8 +474,8 @@ private struct AgentAttentionBadge: View {
     }
 }
 
-private struct CodexStatusIcon: View {
-    let status: CodexStatus
+private struct AgentStatusIcon: View {
+    let status: AgentStatus
     let isSelected: Bool
 
     var body: some View {

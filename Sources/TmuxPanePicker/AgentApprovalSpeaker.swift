@@ -10,7 +10,7 @@ final class MacOSAgentApprovalSpeaker: AgentApprovalSpeaking {
     private let synthesizer = AVSpeechSynthesizer()
 
     func speakApprovalNeeded(count: Int) {
-        let message = count == 1 ? "Codex の承認が必要です。" : "\(count) 件の Codex 承認が必要です。"
+        let message = count == 1 ? "エージェントの承認が必要です。" : "\(count) 件のエージェント承認が必要です。"
         let utterance = AVSpeechUtterance(string: message)
         utterance.voice = Self.preferredJapaneseVoice()
         utterance.rate = 0.46

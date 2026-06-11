@@ -34,13 +34,13 @@ struct TmuxPane: Identifiable, Equatable, Sendable {
         ].joined(separator: " ").lowercased()
     }
 
-    var codexStatus: CodexStatus? {
-        CodexStatus(title: paneTitle)
+    var agentStatus: AgentStatus? {
+        AgentStatus(title: paneTitle)
     }
 
     var displayTitle: String {
         let title = paneTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayText = codexStatus?.message ?? title
+        let displayText = agentStatus?.message ?? title
         let cleanedText = Self.cleanDisplayTitle(displayText)
 
         if !cleanedText.isEmpty {
@@ -75,16 +75,33 @@ enum TmuxPaneFormat {
     static let delimiter = "\u{1F}"
 }
 
-enum CodexStatus: Equatable, Sendable {
-    case running(String)
+enum AgentKind: Equatable, Sendable {
+    case codex
+    case claudeCode
+
+    var displayName: String {
+        switch self {
+        case .codex:
+            return "Codex"
+        case .claudeCode:
+            return "ClaudeCode"
+        }
+    }
+}
+
+enum AgentStatus: Equatable, Sendable {
+    case running(kind: AgentKind, message: String)
     case done(String)
 
     init?(title: String) {
         let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let lowercasedTitle = trimmedTitle.lowercased()
 
-        if lowercasedTitle.hasPrefix("codex:") {
-            self = .running(Self.message(from: trimmedTitle, prefixLength: 6))
+        if let runningPrefix = Self.runningPrefix(for: lowercasedTitle) {
+            self = .running(
+                kind: runningPrefix.kind,
+                message: Self.message(from: trimmedTitle, prefixLength: runningPrefix.prefix.count)
+            )
         } else if lowercasedTitle.hasPrefix("done:") {
             self = .done(Self.message(from: trimmedTitle, prefixLength: 5))
         } else {
@@ -94,18 +111,29 @@ enum CodexStatus: Equatable, Sendable {
 
     var label: String {
         switch self {
-        case .running:
-            return "Codex running"
+        case let .running(kind, _):
+            return "\(kind.displayName) running"
         case .done:
-            return "Codex done"
+            return "Agent done"
         }
     }
 
     var message: String {
         switch self {
-        case let .running(message), let .done(message):
+        case let .running(_, message), let .done(message):
             return message
         }
+    }
+
+    private static func runningPrefix(for lowercasedTitle: String) -> (kind: AgentKind, prefix: String)? {
+        let prefixes: [(AgentKind, String)] = [
+            (.codex, "codex:"),
+            (.claudeCode, "claudecode:"),
+            (.claudeCode, "claude code:"),
+            (.claudeCode, "claude:")
+        ]
+
+        return prefixes.first { lowercasedTitle.hasPrefix($0.1) }
     }
 
     private static func message(from title: String, prefixLength: Int) -> String {
@@ -117,8 +145,8 @@ enum AgentAttention: Equatable, Sendable {
     case waitingForUser
     case awaitingApproval
 
-    init?(screenText: String, codexStatus: CodexStatus?) {
-        guard case .running = codexStatus else {
+    init?(screenText: String, agentStatus: AgentStatus?) {
+        guard case .running = agentStatus else {
             return nil
         }
 
