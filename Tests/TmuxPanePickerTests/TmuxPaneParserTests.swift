@@ -168,6 +168,44 @@ struct TmuxPaneParserTests {
 
         #expect(attention == nil)
     }
+
+    @MainActor
+    @Test
+    func announcesNewApprovalOnlyOnceWhilePaneKeepsWaiting() {
+        let speaker = AgentApprovalSpeakerSpy()
+        var announcer = AgentApprovalAnnouncer()
+        let pane = TmuxPane.makeFixture(paneTitle: "codex: build")
+            .withAgentAttention(.awaitingApproval)
+
+        announcer.update(panes: [pane], speaker: speaker)
+        announcer.update(panes: [pane], speaker: speaker)
+
+        #expect(speaker.spokenCounts == [1])
+    }
+
+    @MainActor
+    @Test
+    func announcesApprovalAgainAfterItClearsAndReturns() {
+        let speaker = AgentApprovalSpeakerSpy()
+        var announcer = AgentApprovalAnnouncer()
+        let pane = TmuxPane.makeFixture(paneTitle: "codex: build")
+            .withAgentAttention(.awaitingApproval)
+
+        announcer.update(panes: [pane], speaker: speaker)
+        announcer.update(panes: [], speaker: speaker)
+        announcer.update(panes: [pane], speaker: speaker)
+
+        #expect(speaker.spokenCounts == [1, 1])
+    }
+}
+
+@MainActor
+private final class AgentApprovalSpeakerSpy: AgentApprovalSpeaking {
+    private(set) var spokenCounts: [Int] = []
+
+    func speakApprovalNeeded(count: Int) {
+        spokenCounts.append(count)
+    }
 }
 
 private extension TmuxPane {
